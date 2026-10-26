@@ -1,5 +1,5 @@
 --[[
-    excluse hub | Murder Mystery 2 (Role Combat & Magnet Update)
+    excluse hub | Murder Mystery 2 (True Role Detection Fix)
 --]]
 getgenv().SecureMode = false
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -46,16 +46,26 @@ local State = {
 
 local aimbotConnection, jumpConnection, espConnection
 
--- === HELPER: Get Roles ===
+-- === HELPER: Get Roles (FIXED) ===
 local function getRole(char)
     if not char then return "Innocent" end
-    local backpack = player:FindFirstChild("Backpack")
+    
+    -- Find the actual Player object for this character
+    local p = Players:GetPlayerFromCharacter(char)
+    if not p then return "Innocent" end
+    
+    -- 1. Check THEIR Backpack
+    local backpack = p:FindFirstChild("Backpack")
     if backpack then
+        -- Check Knife first, because Murderers can pick up dropped Guns
         if backpack:FindFirstChild("Knife") then return "Murderer" end
         if backpack:FindFirstChild("Gun") then return "Sheriff" end
     end
+    
+    -- 2. Check THEIR Character (if they are holding it)
     if char:FindFirstChild("Knife") then return "Murderer" end
     if char:FindFirstChild("Gun") then return "Sheriff" end
+    
     return "Innocent"
 end
 
@@ -72,14 +82,21 @@ espConnection = RunService.Heartbeat:Connect(function()
             local char = p.Character
             local role = getRole(char)
             local shouldHighlight, color = false, Color3.fromRGB(0, 255, 0)
-            if role == "Murderer" and State.murdererEsp then shouldHighlight, color = true, Color3.fromRGB(255, 0, 0)
-            elseif role == "Sheriff" and State.sheriffEsp then shouldHighlight, color = true, Color3.fromRGB(0, 150, 255) end
+            
+            if role == "Murderer" and State.murdererEsp then 
+                shouldHighlight, color = true, Color3.fromRGB(255, 0, 0)
+            elseif role == "Sheriff" and State.sheriffEsp then 
+                shouldHighlight, color = true, Color3.fromRGB(0, 150, 255) 
+            end
+            
             if shouldHighlight then
                 if not State.highlights[char] then
                     local h = Instance.new("Highlight"); h.OutlineColor = Color3.fromRGB(255, 255, 255); h.FillTransparency = 0.5; h.Parent = char; State.highlights[char] = h
                 end
                 State.highlights[char].FillColor = color; State.highlights[char].Enabled = true
-            elseif State.highlights[char] then State.highlights[char].Enabled = false end
+            elseif State.highlights[char] then 
+                State.highlights[char].Enabled = false 
+            end
         end
     end
     if State.gunEsp then
@@ -135,7 +152,6 @@ task.spawn(function()
                 if State.autoPickup then
                     for _, v in pairs(Workspace:GetDescendants()) do
                         if (v.Name == "Gun" or v.Name == "Knife") and v:IsA("Model") and v:FindFirstChild("Handle") then
-                            -- Only pick up if we don't already have it
                             if myRole ~= "Murderer" and v.Name == "Knife" then
                                 char.HumanoidRootPart.CFrame = v.Handle.CFrame
                             elseif myRole ~= "Sheriff" and v.Name == "Gun" then
@@ -339,4 +355,4 @@ settingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
     end
 end })
 
-Rayfield:Notify({ Title = "MM2 Loaded", Content = "Role features & ESP ready.", Duration = 5 })
+Rayfield:Notify({ Title = "MM2 Loaded", Content = "True Role Detection active.", Duration = 5 })
