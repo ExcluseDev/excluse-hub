@@ -1,5 +1,5 @@
 --[[
-    excluse hub | Murder Mystery 2 (Fling & Anti-Fling Update)
+    excluse hub | Murderer Mystery 2 (True Fling Physics Fix)
 --]]
 getgenv().SecureMode = false
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -40,12 +40,13 @@ local State = {
     aimbot = false, silentAim = false, autoShoot = false,
     autoEquip = false, killAura = false, killAuraDistance = 20, autoPickup = false,
     murdererEsp = false, sheriffEsp = false, gunEsp = false, coinEsp = false,
-    flingEnabled = false, antiFlingEnabled = true, flingSpeed = 1000,
+    flingEnabled = false, antiFlingEnabled = true, flingRadius = 15,
     highlights = {},
     autoCoinFarm = false, coinFarmSpeed = 0.2
 }
 
 local aimbotConnection, jumpConnection, espConnection, flingConnection, antiFlingConnection
+local visitedCoins = {}
 
 -- === HELPER: Get Roles ===
 local function getRole(char)
@@ -94,34 +95,32 @@ espConnection = RunService.Heartbeat:Connect(function()
     end
     if State.coinEsp then
         for _, v in pairs(Workspace:GetDescendants()) do
-            if v.Name == "CoinContainer" and v:IsA("Model") and not State.highlights[v] then
+            if v.Name == "CoinContainer" and not State.highlights[v] then
                 local h = Instance.new("Highlight"); h.FillColor = Color3.fromRGB(255, 215, 0); h.OutlineColor = Color3.fromRGB(255, 255, 255); h.Parent = v; State.highlights[v] = h
             end
         end
     end
 end)
 
--- === FLING & ANTI-FLING SYSTEM ===
+-- === TRUE FLING & ANTI-FLING SYSTEM ===
 flingConnection = RunService.Heartbeat:Connect(function()
-    if not getgenv().excluseHubRunning then return end
+    if not getgenv().excluseHubRunning or not State.flingEnabled then return end
     local char = player.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
 
-    if State.flingEnabled then
-        local hrp = char.HumanoidRootPart
-        -- Spin rapidly and apply velocity to fling anyone touched
-        hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(90), 0)
-        local bv = hrp:FindFirstChild("FlingVelocity")
-        if not bv then
-            bv = Instance.new("BodyVelocity")
-            bv.Name = "FlingVelocity"
-            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-            bv.Parent = hrp
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local targetChar = p.Character
+            local dist = (targetChar.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude
+            if dist <= State.flingRadius then
+                local bv = Instance.new("BodyVelocity")
+                bv.Velocity = Vector3.new(math.random(-5000, 5000), 5000, math.random(-5000, 5000))
+                bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+                bv.P = 100000
+                bv.Parent = targetChar.HumanoidRootPart
+                game:GetService("Debris"):AddItem(bv, 0.2)
+            end
         end
-        bv.Velocity = Vector3.new(State.flingSpeed, 0, State.flingSpeed)
-    else
-        local bv = char.HumanoidRootPart:FindFirstChild("FlingVelocity")
-        if bv then bv:Destroy() end
     end
 end)
 
@@ -129,14 +128,8 @@ antiFlingConnection = RunService.Heartbeat:Connect(function()
     if not getgenv().excluseHubRunning or not State.antiFlingEnabled then return end
     local char = player.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    -- Constantly reset velocity and disable collisions to prevent being flung
     char.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
     char.HumanoidRootPart.RotVelocity = Vector3.new(0, 0, 0)
-    for _, part in ipairs(char:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = false
-        end
-    end
 end)
 
 -- === ROLE SPECIFIC PLAYER FEATURES ===
@@ -187,26 +180,29 @@ task.spawn(function()
     end
 end)
 
--- === AUTO COIN FARM (Slightly throttled for stability) ===
+-- === AUTO COIN FARM ===
 task.spawn(function()
     while getgenv().excluseHubRunning do
         if State.autoCoinFarm then
             pcall(function()
                 local char = player.Character
                 if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-                local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-                local coinRemote = remotes and (remotes:FindFirstChild("GetCoin") or remotes:FindFirstChild("Coin") or remotes:FindFirstChild("CollectCoin"))
                 for _, v in pairs(Workspace:GetDescendants()) do
-                    if v.Name == "CoinContainer" and v:IsA("Model") and v.PrimaryPart then
-                        char:MoveTo(v.PrimaryPart.Position)
-                        task.wait(0.15)
-                        if coinRemote then pcall(function() coinRemote:FireServer(v) end) end
-                        task.wait(State.coinFarmSpeed)
+                    if (v.Name == "CoinContainer" or v.Name == "Coin") and not visitedCoins[v] then
+                        if v:IsA("BasePart") then
+                            char.HumanoidRootPart.CFrame = CFrame.new(v.Position)
+                            visitedCoins[v] = true
+                            task.wait(State.coinFarmSpeed)
+                        elseif v:IsA("Model") and v.PrimaryPart then
+                            char.HumanoidRootPart.CFrame = CFrame.new(v.PrimaryPart.Position)
+                            visitedCoins[v] = true
+                            task.wait(State.coinFarmSpeed)
+                        end
                     end
                 end
             end)
         end
-        task.wait(1) -- Increased wait to reduce CPU load
+        task.wait(1)
     end
 end)
 
@@ -304,10 +300,11 @@ mainTab:CreateButton({
 farmTab:CreateSection("Coin Automation")
 farmTab:CreateToggle({ Name = "Auto Collect Coins", CurrentValue = false, Callback = function(v) State.autoCoinFarm = v end })
 farmTab:CreateSlider({ Name = "Farm Speed (Lower = Faster)", Range = {0.05, 1}, Increment = 0.05, Suffix = "s", CurrentValue = 0.2, Callback = function(v) State.coinFarmSpeed = v end })
+farmTab:CreateButton({ Name = "🔄 Reset Visited Coins", Callback = function() visitedCoins = {} end })
 farmTab:CreateSection("Visuals")
 farmTab:CreateToggle({ Name = "Coin ESP (Highlights Coins)", CurrentValue = false, Callback = function(v) 
     State.coinEsp = v 
-    if not v then for obj, h in pairs(State.highlights) do if obj.Name == "CoinContainer" then h:Destroy(); State.highlights[obj] = nil end end end
+    if not v then for obj, h in pairs(State.highlights) do if obj.Name == "CoinContainer" or obj.Name == "Coin" then h:Destroy(); State.highlights[obj] = nil end end end
 end })
 
 -- Visuals
@@ -328,8 +325,8 @@ end })
 
 -- Fling Tab
 flingTab:CreateSection("Fling Settings")
-flingTab:CreateToggle({ Name = "Enable Spin Fling (Touch)", CurrentValue = false, Callback = function(v) State.flingEnabled = v end })
-flingTab:CreateSlider({ Name = "Fling Power", Range = {100, 5000}, Increment = 100, CurrentValue = 1000, Callback = function(v) State.flingSpeed = v end })
+flingTab:CreateToggle({ Name = "Enable Touch Fling", CurrentValue = false, Callback = function(v) State.flingEnabled = v end })
+flingTab:CreateSlider({ Name = "Fling Radius", Range = {5, 30}, Increment = 1, CurrentValue = 15, Callback = function(v) State.flingRadius = v end })
 flingTab:CreateSection("Protection")
 flingTab:CreateToggle({ Name = "Anti-Fling (Self Protection)", CurrentValue = true, Callback = function(v) State.antiFlingEnabled = v end })
 
@@ -386,4 +383,4 @@ settingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
     end
 end })
 
-Rayfield:Notify({ Title = "MM2 Loaded", Content = "Fling & Anti-Fling ready.", Duration = 5 })
+Rayfield:Notify({ Title = "MM2 Loaded", Content = "True Touch Fling & Anti-Fling ready.", Duration = 5 })
