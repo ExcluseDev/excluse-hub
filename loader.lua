@@ -5,7 +5,6 @@
 -- ===================================================================
 -- === PART 1: TELEPORT HANDLER (AUTO-RELOAD) ===
 -- ===================================================================
--- This is set to your specific GitHub link.
 local LOADER_URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/loader.lua" 
 
 if LOADER_URL ~= "" then
@@ -18,7 +17,8 @@ end
 -- ===================================================================
 -- === PART 2: SETUP & THEME ===
 -- ===================================================================
-getgenv().SecureMode = true
+-- 🛑 TURNED OFF SECURE MODE (This prevents Xeno from crashing the game)
+getgenv().SecureMode = false 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local PlaceId = game.PlaceId
 
@@ -50,11 +50,10 @@ local Window = Rayfield:CreateWindow({
 -- ===================================================================
 -- === PART 3: YOUR DATABASE ===
 -- ===================================================================
--- These links point directly to the files in your GitHub!
 local Scripts = {
     ["15899178400"] = { 
         Name = "Call of Mini: Zombies 2",
-        URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/comz2.lua" -- You'll need to create this file later
+        URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/comz2.lua"
     },
     ["77649408247578"] = {
         Name = "Dungeon Quest Reborn",
@@ -84,10 +83,19 @@ if Scripts[tostring(PlaceId)] then
     mainTab:CreateButton({
         Name = "🚀 Launch " .. s.Name,
         Callback = function()
-            Window:Destroy()
-            task.wait(0.5)
+            -- 1. Safely destroy the current window first
+            pcall(function() Window:Destroy() end)
+            local pg = game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui")
+            if pg and pg:FindFirstChild("Rayfield") then pg.Rayfield:Destroy() end
+            
+            -- 2. Wait for the game to clear the memory
+            task.wait(1.5) 
+            
+            -- 3. Load the script
             local ok, err = pcall(function() loadstring(game:HttpGet(s.URL))() end)
-            if not ok then Rayfield:Notify({ Title = "Error", Content = "Failed to load script.", Duration = 5 }) end
+            if not ok then 
+                print("[Loader Error] ", err) 
+            end
         end,
     })
 else
@@ -95,10 +103,10 @@ else
     mainTab:CreateButton({
         Name = "🌐 Launch Universal Hub",
         Callback = function()
-            Window:Destroy()
-            task.wait(0.5)
+            pcall(function() Window:Destroy() end)
+            task.wait(1.5)
             local ok, err = pcall(function() loadstring(game:HttpGet(UNIVERSAL_URL))() end)
-            if not ok then Rayfield:Notify({ Title = "Error", Content = "Failed to load Universal script.", Duration = 5 }) end
+            if not ok then print("[Loader Error] ", err) end
         end,
     })
 end
