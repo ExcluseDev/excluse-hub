@@ -1,5 +1,5 @@
 --[[
-    excluse hub | Murder Mystery 2 (Gun Teleport & Rejoin Update)
+    excluse hub | Murder Mystery 2 (SkidFling & Final Fixes)
 --]]
 getgenv().SecureMode = false
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -113,23 +113,25 @@ espConnection = RunService.Heartbeat:Connect(function()
     end
 end)
 
--- === TRUE FLING & ANTI-FLING SYSTEM ===
+-- === SKIDFLING (WORKING FLING METHOD) ===
 flingConnection = RunService.Heartbeat:Connect(function()
     if not getgenv().excluseHubRunning or not State.flingEnabled then return end
     local char = player.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
 
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             local targetChar = p.Character
-            local dist = (targetChar.HumanoidRootPart.Position - char.HumanoidRootPart.Position).Magnitude
+            local dist = (targetChar.HumanoidRootPart.Position - hrp.Position).Magnitude
             if dist <= State.flingRadius then
-                local bv = Instance.new("BodyVelocity")
-                bv.Velocity = Vector3.new(math.random(-5000, 5000), 5000, math.random(-5000, 5000))
-                bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-                bv.P = 100000
-                bv.Parent = targetChar.HumanoidRootPart
-                game:GetService("Debris"):AddItem(bv, 0.2)
+                -- SkidFling logic: spin our character and set insane velocity
+                hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(90), 0)
+                hrp.Velocity = Vector3.new(9e7, 9e7 * 10, 9e7)
+                hrp.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
+                -- Move towards target
+                hrp.CFrame = CFrame.new(targetChar.HumanoidRootPart.Position)
+                break -- Only fling one person at a time to avoid physics chaos
             end
         end
     end
@@ -355,7 +357,7 @@ end })
 
 -- Fling Tab
 flingTab:CreateSection("Fling Settings")
-flingTab:CreateToggle({ Name = "Enable Touch Fling", CurrentValue = false, Callback = function(v) State.flingEnabled = v end })
+flingTab:CreateToggle({ Name = "Enable Touch Fling (SkidFling)", CurrentValue = false, Callback = function(v) State.flingEnabled = v end })
 flingTab:CreateSlider({ Name = "Fling Radius", Range = {5, 30}, Increment = 1, CurrentValue = 15, Callback = function(v) State.flingRadius = v end })
 flingTab:CreateSection("Protection")
 flingTab:CreateToggle({ Name = "Anti-Fling (Self Protection)", CurrentValue = true, Callback = function(v) State.antiFlingEnabled = v end })
@@ -426,4 +428,4 @@ settingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
     end
 end })
 
-Rayfield:Notify({ Title = "MM2 Loaded", Content = "Gun teleport & Rejoin ready.", Duration = 5 })
+Rayfield:Notify({ Title = "MM2 Loaded", Content = "SkidFling & All features ready.", Duration = 5 })
