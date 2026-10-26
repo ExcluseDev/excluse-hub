@@ -1,350 +1,287 @@
 --[[
-    excluse universal loader (Bulletproof Detection Update)
+    excluse hub | Dungeon Quest Reborn (Timer-Based Combat AI)
 --]]
-
--- 1. FIX FOR XENO COREGUI CRASH
-pcall(function()
-    if game:GetService("CoreGui"):FindFirstChild("RobloxGui") then
-        local resetBindable = game:GetService("CoreGui").RobloxGui:FindFirstChild("ResetButton")
-        if resetBindable then resetBindable:Destroy() end
-    end
-end)
-
--- ===================================================================
--- === PART 1: INSANE GLITCH & SYNTHWAVE INTRO ===
--- ===================================================================
-local Players = game:GetService("Players")
+local player = game:GetService("Players").LocalPlayer
 local TweenService = game:GetService("TweenService")
-local SoundService = game:GetService("SoundService")
-local player = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local VirtualUser = game:GetService("VirtualUser")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-pcall(function()
-    local sound = Instance.new("Sound")
-    sound.SoundId = "rbxassetid://1837727870" -- Heavy Cyberpunk Bass Drop
-    sound.Volume = 1
-    sound.Parent = SoundService
-    sound:Play()
-    game:GetService("Debris"):AddItem(sound, 5)
-end)
+-- === MINIMAL INTRO ===
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.IgnoreGuiInset = true
+local bg = Instance.new("Frame", gui); bg.Size = UDim2.new(1,0,1,0); bg.BackgroundColor3 = Color3.fromRGB(5,5,8)
+local txt = Instance.new("TextLabel", bg); txt.Size = UDim2.new(0,200,0,100); txt.Position = UDim2.new(0.5,-100,0.5,-50); txt.BackgroundTransparency = 1; txt.Text = "EXC"; txt.TextColor3 = Color3.new(1,1,1); txt.TextScaled = true; txt.Font = Enum.Font.GothamBlack; txt.TextTransparency = 1
+TweenService:Create(txt, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+task.wait(0.7)
+TweenService:Create(bg, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+TweenService:Create(txt, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+task.wait(0.3)
+gui:Destroy()
 
-local loadingGui = Instance.new("ScreenGui")
-loadingGui.Name = "EXC_LoadingScreen"
-loadingGui.IgnoreGuiInset = true
-loadingGui.DisplayOrder = 9999
-loadingGui.Parent = player:WaitForChild("PlayerGui")
-
-local bgFrame = Instance.new("Frame")
-bgFrame.Size = UDim2.new(1, 0, 1, 0)
-bgFrame.BackgroundColor3 = Color3.fromRGB(2, 0, 5)
-bgFrame.BorderSizePixel = 0
-bgFrame.Parent = loadingGui
-
--- Synthwave Grid Background
-local grid = Instance.new("ImageLabel")
-grid.Size = UDim2.new(2, 0, 2, 0)
-grid.Position = UDim2.new(-0.5, 0, -0.5, 0)
-grid.BackgroundTransparency = 1
-grid.Image = "rbxassetid://1316045217"
-grid.ImageColor3 = Color3.fromRGB(255, 0, 150)
-grid.ImageTransparency = 0.5
-grid.Parent = bgFrame
-TweenService:Create(grid, TweenInfo.new(3, Enum.EasingStyle.Linear), {Position = UDim2.new(-0.5, 0, 0, 0)}):Play()
-
--- Chromatic Aberration Text Setup (3 Layers)
-local function createText(offset, color)
-    local txt = Instance.new("TextLabel")
-    txt.Size = UDim2.new(0, 300, 0, 150)
-    txt.Position = UDim2.new(0.5, -150 + offset.X, 0.5, -75 + offset.Y)
-    txt.BackgroundTransparency = 1
-    txt.Text = "EXC"
-    txt.TextColor3 = color
-    txt.TextScaled = true
-    txt.Font = Enum.Font.GothamBlack
-    txt.TextTransparency = 1
-    txt.Parent = bgFrame
-    return txt
-end
-
-local txtRed = createText(Vector2.new(-4, 0), Color3.fromRGB(255, 0, 0))
-local txtCyan = createText(Vector2.new(4, 0), Color3.fromRGB(0, 255, 255))
-local txtWhite = createText(Vector2.new(0, 0), Color3.fromRGB(255, 255, 255))
-
-local uiStroke = Instance.new("UIStroke")
-uiStroke.Thickness = 3
-uiStroke.Color = Color3.fromRGB(255, 255, 255)
-uiStroke.Transparency = 1
-uiStroke.Parent = txtWhite
-
-local barBg = Instance.new("Frame")
-barBg.Size = UDim2.new(0, 300, 0, 2)
-barBg.Position = UDim2.new(0.5, -150, 0.5, 100)
-barBg.BackgroundColor3 = Color3.fromRGB(30, 20, 40)
-barBg.BorderSizePixel = 0
-barBg.Parent = bgFrame
-
-local barFill = Instance.new("Frame")
-barFill.Size = UDim2.new(0, 0, 1, 0)
-barFill.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-barFill.BorderSizePixel = 0
-barFill.Parent = barBg
-
-local function playIntro()
-    TweenService:Create(txtRed, TweenInfo.new(0.5), {TextTransparency = 0.5}):Play()
-    TweenService:Create(txtCyan, TweenInfo.new(0.5), {TextTransparency = 0.5}):Play()
-    TweenService:Create(txtWhite, TweenInfo.new(0.5), {TextTransparency = 0}):Play()
-    TweenService:Create(uiStroke, TweenInfo.new(0.5), {Transparency = 0}):Play()
-    
-    for i = 1, 10 do
-        txtRed.Position = UDim2.new(0.5, -150 + math.random(-10, 10), 0.5, -75 + math.random(-5, 5))
-        txtCyan.Position = UDim2.new(0.5, -150 + math.random(-10, 10), 0.5, -75 + math.random(-5, 5))
-        task.wait(0.05)
-    end
-    
-    txtRed.Position = UDim2.new(0.5, -154, 0.5, -75)
-    txtCyan.Position = UDim2.new(0.5, -146, 0.5, -75)
-    
-    TweenService:Create(barFill, TweenInfo.new(1.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 1, 0)}):Play()
-    task.wait(1.5)
-    
-    TweenService:Create(bgFrame, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
-    TweenService:Create(grid, TweenInfo.new(0.4), {ImageTransparency = 1}):Play()
-    TweenService:Create(txtRed, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
-    TweenService:Create(txtCyan, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
-    TweenService:Create(txtWhite, TweenInfo.new(0.4), {TextTransparency = 1}):Play()
-    TweenService:Create(uiStroke, TweenInfo.new(0.4), {Transparency = 1}):Play()
-    TweenService:Create(barBg, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
-    TweenService:Create(barFill, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
-    
-    task.wait(0.4)
-    loadingGui:Destroy()
-end
-
-playIntro()
-
--- ===================================================================
--- === PART 2: RAYFIELD SETUP ===
--- ===================================================================
+-- === RAYFIELD SETUP ===
 getgenv().SecureMode = false
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+getgenv().excluseHubRunning = true
 
-local CyberNeonTheme = {
-    TextColor = Color3.fromRGB(255, 255, 255), Background = Color3.fromRGB(8, 5, 15),
-    Topbar = Color3.fromRGB(12, 8, 20), Shadow = Color3.fromRGB(0, 0, 0),
-    NotificationBackground = Color3.fromRGB(15, 10, 25), NotificationActionsBackground = Color3.fromRGB(20, 15, 35),
-    TabBackground = Color3.fromRGB(15, 10, 25), TabStroke = Color3.fromRGB(255, 0, 150),
-    TabBackgroundSelected = Color3.fromRGB(255, 0, 150), TabTextColor = Color3.fromRGB(150, 150, 150),
-    SelectedTabTextColor = Color3.fromRGB(255, 255, 255), ElementBackground = Color3.fromRGB(15, 10, 25),
-    ElementBackgroundHover = Color3.fromRGB(25, 15, 40), SecondaryElementBackground = Color3.fromRGB(10, 5, 20),
-    ElementStroke = Color3.fromRGB(0, 255, 255), SecondaryElementStroke = Color3.fromRGB(50, 50, 100),
-    SliderBackground = Color3.fromRGB(255, 0, 150), SliderProgress = Color3.fromRGB(0, 255, 255),
-    SliderStroke = Color3.fromRGB(255, 255, 255), ToggleBackground = Color3.fromRGB(20, 15, 35),
-    ToggleEnabled = Color3.fromRGB(0, 255, 255), ToggleDisabled = Color3.fromRGB(50, 50, 60),
+local VoidGlassTheme = {
+    TextColor = Color3.fromRGB(255, 255, 255), Background = Color3.fromRGB(10, 10, 15),
+    Topbar = Color3.fromRGB(15, 15, 25), Shadow = Color3.fromRGB(0, 0, 0),
+    NotificationBackground = Color3.fromRGB(15, 15, 25), NotificationActionsBackground = Color3.fromRGB(25, 25, 40),
+    TabBackground = Color3.fromRGB(15, 15, 25), TabStroke = Color3.fromRGB(60, 60, 100),
+    TabBackgroundSelected = Color3.fromRGB(150, 50, 255), TabTextColor = Color3.fromRGB(180, 180, 200),
+    SelectedTabTextColor = Color3.fromRGB(255, 255, 255), ElementBackground = Color3.fromRGB(20, 20, 30),
+    ElementBackgroundHover = Color3.fromRGB(30, 30, 45), SecondaryElementBackground = Color3.fromRGB(10, 10, 15),
+    ElementStroke = Color3.fromRGB(80, 80, 120), SecondaryElementStroke = Color3.fromRGB(40, 40, 60),
+    SliderBackground = Color3.fromRGB(150, 50, 255), SliderProgress = Color3.fromRGB(0, 255, 255),
+    SliderStroke = Color3.fromRGB(200, 100, 255), ToggleBackground = Color3.fromRGB(30, 30, 45),
+    ToggleEnabled = Color3.fromRGB(0, 255, 255), ToggleDisabled = Color3.fromRGB(60, 60, 70),
     ToggleEnabledStroke = Color3.fromRGB(255, 255, 255), ToggleDisabledStroke = Color3.fromRGB(80, 80, 90),
     ToggleEnabledOuterStroke = Color3.fromRGB(0, 255, 255), ToggleDisabledOuterStroke = Color3.fromRGB(50, 50, 60),
-    DropdownSelected = Color3.fromRGB(255, 0, 150), DropdownUnselected = Color3.fromRGB(15, 10, 25),
-    InputBackground = Color3.fromRGB(10, 5, 20), InputStroke = Color3.fromRGB(0, 255, 255),
-    PlaceholderColor = Color3.fromRGB(100, 100, 120)
+    DropdownSelected = Color3.fromRGB(150, 50, 255), DropdownUnselected = Color3.fromRGB(15, 15, 25),
+    InputBackground = Color3.fromRGB(10, 10, 15), InputStroke = Color3.fromRGB(80, 80, 120),
+    PlaceholderColor = Color3.fromRGB(120, 120, 140)
 }
 
 local Window = Rayfield:CreateWindow({
-    Name = "excluse hub", LoadingTitle = "Loading...",
-    LoadingSubtitle = "v1.621", Theme = CyberNeonTheme, DisableRayfieldPrompts = true, 
-    DisableBuildWarnings = true, ConfigurationSaving = { Enabled = false }, KeySystem = false
+    Name = "excluse hub | DQR", LoadingTitle = "Loading DQR AI...", LoadingSubtitle = "v3.1 Timer",
+    Theme = VoidGlassTheme, KeySystem = false, ConfigurationSaving = { Enabled = false }
 })
 
--- ===================================================================
--- === PART 3: ULTRA UI POST-PROCESSING (NEBULA & PARTICLES) ===
--- ===================================================================
+-- === GALAXY UI OVERRIDE ===
 task.spawn(function()
     task.wait(1)
-    local pg = player:FindFirstChild("PlayerGui")
-    local rayfieldGui = pg and pg:FindFirstChild("Rayfield")
-    
-    if rayfieldGui then
-        local mainFrame = rayfieldGui:FindFirstChild("MainFrame")
-        
-        if mainFrame then
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 8)
-            corner.Parent = mainFrame
-            
-            local border = Instance.new("UIStroke")
-            border.Color = Color3.fromRGB(0, 255, 255)
-            border.Thickness = 2
-            border.Transparency = 0.2
-            border.Parent = mainFrame
-
+    local rayfieldGui = player:FindFirstChild("PlayerGui") and player:FindFirstChild("PlayerGui"):FindFirstChild("Rayfield")
+    if rayfieldGui and rayfieldGui:FindFirstChild("MainFrame") then
+        local mainFrame = rayfieldGui.MainFrame
+        local bg = mainFrame:FindFirstChild("Background")
+        if bg then
+            local galaxyImage = Instance.new("ImageLabel")
+            galaxyImage.Size = UDim2.new(1.5, 0, 1.5, 0); galaxyImage.Position = UDim2.new(-0.25, 0, -0.25, 0)
+            galaxyImage.BackgroundTransparency = 1; galaxyImage.Image = "rbxassetid://7148785474"; galaxyImage.ImageTransparency = 0.2; galaxyImage.ZIndex = 0
+            galaxyImage.Parent = bg
             task.spawn(function()
-                local hue = 0
-                while border.Parent do
-                    hue = (hue + 0.005) % 1
-                    border.Color = Color3.fromHSV(hue, 1, 1)
-                    task.wait(0.05)
+                while galaxyImage.Parent do
+                    TweenService:Create(galaxyImage, TweenInfo.new(15, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Position = UDim2.new(-0.3, 0, -0.2, 0)}):Play()
+                    task.wait(15)
+                    TweenService:Create(galaxyImage, TweenInfo.new(15, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Position = UDim2.new(-0.2, 0, -0.3, 0)}):Play()
+                    task.wait(15)
                 end
             end)
-
-            local bg = mainFrame:FindFirstChild("Background")
-            if bg then
-                local colors = {Color3.fromRGB(255, 0, 150), Color3.fromRGB(0, 255, 255), Color3.fromRGB(100, 0, 255)}
-                for i = 1, 3 do
-                    local nebula = Instance.new("ImageLabel")
-                    nebula.Size = UDim2.new(1.5, 0, 1.5, 0)
-                    nebula.Position = UDim2.new(0, 0, 0, 0)
-                    nebula.BackgroundTransparency = 1
-                    nebula.Image = "rbxassetid://1316045217"
-                    nebula.ImageColor3 = colors[i]
-                    nebula.ImageTransparency = 0.85
-                    nebula.ZIndex = 0
-                    nebula.Parent = bg
-
-                    task.spawn(function()
-                        while nebula.Parent do
-                            local randX = math.random(-100, 100)
-                            local randY = math.random(-100, 100)
-                            TweenService:Create(nebula, TweenInfo.new(10, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                                Position = UDim2.new(0, randX, 0, randY)
-                            }):Play()
-                            task.wait(10)
-                        end
-                    end)
+        end
+        for _, desc in ipairs(mainFrame:GetDescendants()) do
+            if desc:IsA("Frame") and desc.Name ~= "Background" then
+                desc.BackgroundTransparency = 0.3
+                if not desc:FindFirstChildOfClass("UICorner") then
+                    local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 8); c.Parent = desc
                 end
             end
-
-            for _, desc in ipairs(mainFrame:GetDescendants()) do
-                if desc:IsA("Frame") and desc ~= mainFrame and desc ~= bg then
-                    if not desc:FindFirstChildOfClass("UICorner") then
-                        local c = Instance.new("UICorner")
-                        c.CornerRadius = UDim.new(0, 6)
-                        c.Parent = desc
-                    end
-                end
-            end
-            
-            local particlesFolder = Instance.new("Folder")
-            particlesFolder.Name = "Particles"
-            particlesFolder.Parent = mainFrame
-
-            task.spawn(function()
-                while mainFrame.Parent do
-                    local p = Instance.new("Frame")
-                    p.Size = UDim2.new(0, math.random(2,4), 0, math.random(2,4))
-                    p.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-                    p.BorderSizePixel = 0
-                    p.Position = UDim2.new(math.random(), 0, 1, 0)
-                    p.ZIndex = 10
-                    
-                    local pCorner = Instance.new("UICorner")
-                    pCorner.CornerRadius = UDim.new(1, 0)
-                    pCorner.Parent = p
-                    
-                    p.Parent = particlesFolder
-                    
-                    local speed = math.random(2, 6)
-                    TweenService:Create(p, TweenInfo.new(speed, Enum.EasingStyle.Linear), {
-                        Position = UDim2.new(p.Position.X.Scale, 0, -0.1, 0),
-                        BackgroundTransparency = 1
-                    }):Play()
-                    
-                    task.delay(speed, function() p:Destroy() end)
-                    task.wait(0.1)
-                end
-            end)
+            if desc:IsA("ImageLabel") and desc.Name ~= "GalaxyImage" then desc.Visible = false end
         end
     end
 end)
 
--- ===================================================================
--- === PART 4: DATABASE & EXECUTION ===
--- ===================================================================
-local PlaceId = game.PlaceId
-local UniverseId = game.GameId -- Added Universe ID for sub-place detection
-
-local Scripts = {
-    ["15899178400"] = { Name = "Call of Mini: Zombies 2", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/comz2.lua" },
-    ["77649408247578"] = { Name = "Dungeon Quest Reborn", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/dqr.lua" },
-    ["6447798030"] = { Name = "Funky Friday", URL = "https://raw.githubusercontent.com/InfernusScripts/Null-Fire/main/Loader" },
-    ["142823291"] = { Name = "Murder Mystery 2", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/mm2.lua" },
-    ["4588604953"] = { Name = "Criminality", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/criminality.lua" },
-    ["1537690962"] = { Name = "Bee Swarm Simulator", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/bss.lua" }
+-- === STATE ===
+local State = {
+    aiEnabled = false,
+    kiteDistance = 25,
+    dodgeThreshold = 15,
+    healthThreshold = 40,
+    predictionWindow = 0.3,
+    autoSell = false, autoEquip = false, autoReplay = false, autoStats = false,
+    fly = false, flySpeed = 50, walkspeed = 16, jumpPower = 50
 }
-local UNIVERSAL_URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/universal.lua"
 
-local success, GameName = pcall(function() return game:GetService("MarketplaceService"):GetProductInfo(PlaceId).Name end)
-if not success then GameName = "Unknown Game" end
+-- === UTILITY FUNCTIONS ===
+local function getEnemies()
+    local list = {}
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and obj ~= player.Character then
+            table.insert(list, obj)
+        end
+    end
+    return list
+end
 
--- ===================================================================
--- === SMART DETECTION FOR SUB-PLACES (DQR FIX) ===
--- ===================================================================
--- If it's DQR's main place, or DQR's Universe ID, or the name has keywords.
-local isDQRDungeon = (PlaceId == 77649408247578) or (UniverseId == 3504706511) or (string.find(string.lower(GameName), "dungeon quest")) or (string.find(string.lower(GameName), "level"))
+local function getClosestEnemy()
+    local closest, dist = nil, math.huge
+    local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return nil, dist end
+    for _, enemy in ipairs(getEnemies()) do
+        local eRoot = enemy:FindFirstChild("HumanoidRootPart")
+        if eRoot then
+            local d = (eRoot.Position - myRoot.Position).Magnitude
+            if d < dist then dist = d; closest = enemy end
+        end
+    end
+    return closest, dist
+end
 
-local targetScriptUrl = nil
-local targetScriptName = ""
+-- === TIMER-BASED COMBAT AI ===
+local function runAI()
+    local char = player.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    local myRoot = char:FindFirstChild("HumanoidRootPart")
+    if not hum or not myRoot then return end
 
-if Scripts[tostring(PlaceId)] then
-    targetScriptUrl = Scripts[tostring(PlaceId)].URL
-    targetScriptName = Scripts[tostring(PlaceId)].Name
-elseif isDQRDungeon then
-    if Scripts["77649408247578"] then
-        targetScriptUrl = Scripts["77649408247578"].URL
-        targetScriptName = "Dungeon Quest Reborn (In Dungeon)"
+    local closestEnemy, enemyDist = getClosestEnemy()
+    local healthPct = (hum.Health / hum.MaxHealth) * 100
+
+    -- 1. RECOVER STATE (Low Health)
+    if healthPct < State.healthThreshold then
+        if closestEnemy then
+            local eRoot = closestEnemy:FindFirstChild("HumanoidRootPart")
+            if eRoot then
+                local dir = (myRoot.Position - eRoot.Position).Unit
+                hum:MoveTo(myRoot.Position + dir * 50) -- Run far away
+            end
+        end
+        return
+    end
+
+    -- 2. KITE / STRAFE STATE (Too Close or just moving)
+    if closestEnemy then
+        local eRoot = closestEnemy:FindFirstChild("HumanoidRootPart")
+        if eRoot then
+            local dir = (myRoot.Position - eRoot.Position).Unit
+            
+            if enemyDist < State.dodgeThreshold then
+                -- Too close, move away
+                hum:MoveTo(myRoot.Position + dir * (State.kiteDistance - enemyDist))
+            else
+                -- Strafe around the enemy (perpendicular movement)
+                local strafeDir = Vector3.new(-dir.Z, 0, dir.X)
+                hum:MoveTo(myRoot.Position + strafeDir * 10)
+                
+                -- Randomly jump to dodge ground AoE
+                if math.random(1, 10) <= 2 then
+                    hum:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end
+        end
+    end
+
+    -- 3. ENGAGE STATE (Attack if in range)
+    if closestEnemy and enemyDist < (State.kiteDistance + 10) then
+        VirtualUser:CaptureController()
+        VirtualUser:ClickButton1(Vector2.new(0, 0))
+        
+        local virt = game:GetService("VirtualInputManager")
+        virt:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
+        virt:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
+        task.wait(0.1)
+        virt:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+        virt:SendKeyEvent(false, Enum.KeyCode.E, false, game)
     end
 end
 
--- ===================================================================
--- === PART 5: TABS & UI ===
--- ===================================================================
-local mainTab = Window:CreateTab("🏠 Home")
-local gamesTab = Window:CreateTab("🎮 Supported Games")
+-- AI Loop
+task.spawn(function()
+    while State.aiEnabled and getgenv().excluseHubRunning do
+        pcall(runAI)
+        task.wait(State.predictionWindow)
+    end
+end)
 
--- --- HOME TAB ---
-mainTab:CreateSection("Detection")
-mainTab:CreateLabel("Game: " .. GameName)
-mainTab:CreateSection("Launch")
+-- === FLY ===
+local flyConnection
+local function toggleFly(enabled)
+    State.fly = enabled
+    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    if enabled then
+        local bg = Instance.new("BodyGyro", hrp); bg.P = 9e4; bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9); bg.CFrame = hrp.CFrame
+        local bv = Instance.new("BodyVelocity", hrp); bv.Velocity = Vector3.new(0,0,0); bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        flyConnection = RunService.RenderStepped:Connect(function()
+            if not State.fly or not hrp.Parent then if flyConnection then flyConnection:Disconnect() end return end
+            local cam = Workspace.CurrentCamera; local move = Vector3.new()
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then move += cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then move -= cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then move -= cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then move += cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then move += Vector3.new(0,1,0) end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then move -= Vector3.new(0,1,0) end
+            bv.Velocity = move * State.flySpeed; bg.CFrame = cam.CFrame
+        end)
+    else
+        if flyConnection then flyConnection:Disconnect() end
+        for _, v in pairs(hrp:GetChildren()) do if v:IsA("BodyGyro") or v:IsA("BodyVelocity") then v:Destroy() end end
+    end
+end
 
-local function executeScript(url, name)
+-- === UI CONSTRUCTION ===
+local mainTab = Window:CreateTab("⚔️ AI Combat")
+local debugTab = Window:CreateTab("🔍 Debug")
+local autoTab = Window:CreateTab("🤖 Automation")
+local playerTab = Window:CreateTab("🏃 Player")
+local settingsTab = Window:CreateTab("⚙️ Settings")
+
+-- AI Combat Tab
+mainTab:CreateSection("Timer-Based Combat AI")
+mainTab:CreateToggle({ Name = "Enable AI Mode", CurrentValue = false, Callback = function(v) State.aiEnabled = v end })
+mainTab:CreateSlider({ Name = "Kite Distance", Range = {10, 50}, Increment = 1, CurrentValue = 25, Callback = function(v) State.kiteDistance = v end })
+mainTab:CreateSlider({ Name = "Dodge Threshold (Distance)", Range = {5, 30}, Increment = 1, CurrentValue = 15, Callback = function(v) State.dodgeThreshold = v end })
+mainTab:CreateSlider({ Name = "Health Threshold (%)", Range = {10, 80}, Increment = 5, CurrentValue = 40, Callback = function(v) State.healthThreshold = v end })
+mainTab:CreateSlider({ Name = "Prediction Window (s)", Range = {0.1, 1.0}, Increment = 0.1, CurrentValue = 0.3, Callback = function(v) State.predictionWindow = v end })
+
+-- Debug Tab
+debugTab:CreateSection("Dungeon Debug Info")
+debugTab:CreateLabel("Use this to find attack names if AI fails.")
+debugTab:CreateButton({
+    Name = "🖨️ Print Nearby Objects to Console",
+    Callback = function()
+        local count = 0
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj:IsA("BasePart") or obj:IsA("Model") then
+                local name = obj.Name:lower()
+                if name:find("attack") or name:find("telegraph") or name:find("warning") or name:find("zone") or name:find("ring") or name:find("red") then
+                    print("[DQR Debug] Found:", obj:GetFullName(), "| Class:", obj.ClassName)
+                    count = count + 1
+                end
+            end
+        end
+        print("[DQR Debug] Found", count, "possible attack objects.")
+        Rayfield:Notify({ Title = "Debug Printed", Content = "Check console. Found " .. count .. " objects.", Duration = 5 })
+    end
+})
+
+-- Automation Tab
+autoTab:CreateSection("Item & Dungeon Automation")
+autoTab:CreateToggle({ Name = "Auto Sell Items", CurrentValue = false, Callback = function(v) State.autoSell = v end })
+autoTab:CreateToggle({ Name = "Auto Equip Best", CurrentValue = false, Callback = function(v) State.autoEquip = v end })
+autoTab:CreateToggle({ Name = "Auto Replay Dungeon", CurrentValue = false, Callback = function(v) State.autoReplay = v end })
+autoTab:CreateToggle({ Name = "Auto Allocate Stats", CurrentValue = false, Callback = function(v) State.autoStats = v end })
+
+-- Player Tab
+playerTab:CreateSection("Movement")
+playerTab:CreateSlider({ Name = "WalkSpeed", Range = {16, 500}, Increment = 1, CurrentValue = 16, Callback = function(v) State.walkspeed = v end })
+playerTab:CreateSlider({ Name = "JumpPower", Range = {50, 500}, Increment = 5, CurrentValue = 50, Callback = function(v) State.jumpPower = v end })
+playerTab:CreateToggle({ Name = "Fly", CurrentValue = false, Callback = function(v) toggleFly(v) end })
+playerTab:CreateSlider({ Name = "Fly Speed", Range = {10, 200}, Increment = 5, CurrentValue = 50, Callback = function(v) State.flySpeed = v end })
+
+RunService.Heartbeat:Connect(function()
+    local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.WalkSpeed = State.walkspeed
+        hum.JumpPower = State.jumpPower
+        hum.UseJumpPower = true
+    end
+end)
+
+-- Settings Tab
+settingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
+    getgenv().excluseHubRunning = false
+    State.aiEnabled = false; State.autoSell = false; State.autoEquip = false; State.autoReplay = false; State.autoStats = false; State.fly = false
+    task.wait(0.3)
     pcall(function() Window:Destroy() end)
     local pg = player:FindFirstChild("PlayerGui")
     if pg then
         if pg:FindFirstChild("Rayfield") then pg.Rayfield:Destroy() end
         if pg:FindFirstChild("RayfieldToggleScreen") then pg.RayfieldToggleScreen:Destroy() end
     end
-    
-    task.wait(1)
-    
-    local ok, err = pcall(function() loadstring(game:HttpGet(url))() end)
-    if not ok then 
-        warn("Failed to load: " .. tostring(err))
-    end
-end
+end })
 
-if targetScriptUrl then
-    mainTab:CreateLabel("✅ Script found for " .. targetScriptName)
-    mainTab:CreateButton({
-        Name = "🚀 Launch " .. targetScriptName,
-        Callback = function() executeScript(targetScriptUrl, targetScriptName) end,
-    })
-else
-    mainTab:CreateLabel("❌ No specific script found for this game.")
-    mainTab:CreateButton({
-        Name = "🌐 Launch Universal Hub",
-        Callback = function() executeScript(UNIVERSAL_URL, "Universal Hub") end,
-    })
-end
-
--- --- GAMES TAB ---
-gamesTab:CreateSection("All Supported Games")
-gamesTab:CreateLabel("Click a button below to server hop directly to that game.")
-
-for id, gameData in pairs(Scripts) do
-    gamesTab:CreateButton({
-        Name = "🌐 Join " .. gameData.Name,
-        Callback = function()
-            Rayfield:Notify({ Title = "Teleporting", Content = "Joining " .. gameData.Name .. "...", Duration = 3 })
-            task.wait(0.5)
-            pcall(function() TeleportService:Teleport(tonumber(id), player) end)
-        end,
-    })
-end
-
-Rayfield:Notify({ Title = "SYSTEM ONLINE", Content = "Detected: " .. GameName .. " | 6 Games Supported", Duration = 5 })
+Rayfield:Notify({ Title = "DQR Loaded", Content = "Timer-Based AI loaded. Equip your best gear and enable AI Mode.", Duration = 6 })
