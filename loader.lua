@@ -1,5 +1,5 @@
 --[[
-    excluse universal loader (Ultra-Lightweight Fix)
+    excluse universal loader (ANTI-CRASH)
 --]]
 
 -- 1. FIX FOR XENO COREGUI CRASH
@@ -47,15 +47,16 @@ elseif isDQR then
     targetName = "Dungeon Quest Reborn"
 end
 
--- 3. RAW GUI (No Rayfield to prevent double-load crash)
+-- 3. RAW GUI (NO INTRO, NO RAYFIELD)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "EXC_Loader"
 ScreenGui.ResetOnSpawn = false
+ScreenGui.DisplayOrder = 9999
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
 
 local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0, 300, 0, 200)
-Frame.Position = UDim2.new(0.5, -150, 0.5, -100)
+Frame.Size = UDim2.new(0, 300, 0, 180)
+Frame.Position = UDim2.new(0.5, -150, 0.5, -90)
 Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
 Frame.BorderSizePixel = 2
 Frame.BorderColor3 = Color3.fromRGB(150, 50, 255)
@@ -71,8 +72,8 @@ Title.TextSize = 18
 Title.Parent = Frame
 
 local Info = Instance.new("TextLabel")
-Info.Size = UDim2.new(1, -20, 0, 40)
-Info.Position = UDim2.new(0, 10, 0, 50)
+Info.Size = UDim2.new(1, -20, 0, 30)
+Info.Position = UDim2.new(0, 10, 0, 45)
 Info.BackgroundTransparency = 1
 Info.Text = "Detected: " .. GameName
 Info.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -83,17 +84,17 @@ Info.Parent = Frame
 
 local Btn = Instance.new("TextButton")
 Btn.Size = UDim2.new(1, -40, 0, 40)
-Btn.Position = UDim2.new(0, 20, 0, 100)
+Btn.Position = UDim2.new(0, 20, 0, 85)
 Btn.BackgroundColor3 = Color3.fromRGB(150, 50, 255)
 Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 Btn.Font = Enum.Font.GothamBold
 Btn.TextSize = 16
-Btn.Text = "Launch Script"
+Btn.Text = targetUrl and ("Launch " .. targetName) or "Launch Universal Hub"
 Btn.Parent = Frame
 
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(1, -40, 0, 30)
-CloseBtn.Position = UDim2.new(0, 20, 0, 155)
+CloseBtn.Size = UDim2.new(1, -40, 0, 25)
+CloseBtn.Position = UDim2.new(0, 20, 0, 135)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.Font = Enum.Font.Gotham
@@ -101,27 +102,31 @@ CloseBtn.TextSize = 14
 CloseBtn.Text = "Cancel"
 CloseBtn.Parent = Frame
 
--- 4. EXECUTION LOGIC (With huge wait time for Xeno memory flush)
-local function execute(url)
-    Frame:Destroy() -- Delete the loader GUI immediately
-    task.wait(2) -- CRITICAL: Give Xeno 2 full seconds to flush the memory before loading the next UI
+-- 4. EXECUTION LOGIC (THE FIX)
+Btn.MouseButton1Click:Connect(function()
+    -- Hide the UI instead of destroying it (destroys cause Xeno to crash mid-execution)
+    Frame.Visible = false 
     
-    local ok, err = pcall(function()
-        loadstring(game:HttpGet(url))()
+    -- Spawn a new thread so the HTTP request doesn't freeze the UI thread
+    task.spawn(function()
+        task.wait(1) -- Give the engine 1 second to breathe
+        
+        local urlToLoad = targetUrl or UNIVERSAL_URL
+        local ok, err = pcall(function()
+            loadstring(game:HttpGet(urlToLoad))()
+        end)
+        
+        if not ok then
+            warn("[EXC Loader] Error: " .. tostring(err))
+            -- If it fails, show the UI again so they can retry
+            Frame.Visible = true
+        else
+            -- If successful, destroy the loader completely
+            task.wait(1)
+            ScreenGui:Destroy()
+        end
     end)
-    
-    if not ok then
-        print("[EXC Loader] Error loading script: " .. tostring(err))
-    end
-end
-
-if targetUrl then
-    Btn.Text = "Launch " .. targetName
-    Btn.MouseButton1Click:Connect(function() execute(targetUrl) end)
-else
-    Btn.Text = "Launch Universal Hub"
-    Btn.MouseButton1Click:Connect(function() execute(UNIVERSAL_URL) end)
-end
+end)
 
 CloseBtn.MouseButton1Click:Connect(function()
     ScreenGui:Destroy()
