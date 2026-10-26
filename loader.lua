@@ -187,6 +187,7 @@ local Scripts = {
     ["122446657157717"] = { Name = "Sniper Arena", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/sniperarena.lua" },
     ["17516596118"] = { Name = "Hypershot", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/hypershot.lua" },
     ["90568084448279"] = { Name = "One Tap", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/onetap.lua" }
+    ["13772394625"] = { Name = "Blade Ball", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/bladeball.lua" }
 }
 local UNIVERSAL_URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/universal.lua"
 
