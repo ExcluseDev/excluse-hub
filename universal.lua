@@ -3,6 +3,16 @@
     Credits: Infinite Yield (Open Source)
 --]]
 
+-- 1. FIX FOR XENO COREGUI CRASH (MUST BE AT THE TOP)
+pcall(function()
+    if game:GetService("CoreGui"):FindFirstChild("RobloxGui") then
+        local resetBindable = game:GetService("CoreGui").RobloxGui:FindFirstChild("ResetButton")
+        if resetBindable then
+            resetBindable:Destroy()
+        end
+    end
+end)
+
 local player = game:GetService("Players").LocalPlayer
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -15,23 +25,24 @@ local HttpService = game:GetService("HttpService")
 local Mouse = player:GetMouse()
 local Camera = Workspace.CurrentCamera
 
--- === MINIMAL INTRO ===
+-- 2. MINIMALIST INTRO
 local introGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 introGui.IgnoreGuiInset = true
 introGui.DisplayOrder = 9999
 local bg = Instance.new("Frame", introGui); bg.Size = UDim2.new(1,0,1,0); bg.BackgroundColor3 = Color3.fromRGB(5,5,8); bg.BorderSizePixel = 0
 local txt = Instance.new("TextLabel", bg); txt.Size = UDim2.new(0,200,0,100); txt.Position = UDim2.new(0.5,-100,0.5,-50); txt.BackgroundTransparency = 1; txt.Text = "EXC"; txt.TextColor3 = Color3.new(1,1,1); txt.TextScaled = true; txt.Font = Enum.Font.GothamBlack; txt.TextTransparency = 1
 local stroke = Instance.new("UIStroke", txt); stroke.Thickness = 2; stroke.Color = Color3.fromRGB(150, 200, 255); stroke.Transparency = 1
+
 TweenService:Create(txt, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
 TweenService:Create(stroke, TweenInfo.new(0.3), {Transparency = 0}):Play()
-task.wait(0.5)
+task.wait(0.6)
 TweenService:Create(bg, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
 TweenService:Create(txt, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
 TweenService:Create(stroke, TweenInfo.new(0.3), {Transparency = 1}):Play()
 task.wait(0.3)
 introGui:Destroy()
 
--- === RAYFIELD SETUP ===
+-- 3. RAYFIELD SETUP & THEME
 getgenv().SecureMode = false
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 getgenv().excluseHubRunning = true
@@ -60,19 +71,22 @@ local Window = Rayfield:CreateWindow({
     Theme = VoidGlassTheme, KeySystem = false, ConfigurationSaving = { Enabled = false }
 })
 
--- === GALAXY UI OVERRIDE ===
+-- 4. GALAXY UI OVERRIDE & ANIMATIONS
 task.spawn(function()
     task.wait(1)
     local rayfieldGui = player:FindFirstChild("PlayerGui") and player:FindFirstChild("PlayerGui"):FindFirstChild("Rayfield")
     if rayfieldGui and rayfieldGui:FindFirstChild("MainFrame") then
         local mainFrame = rayfieldGui.MainFrame
         local bg = mainFrame:FindFirstChild("Background")
+        
+        -- Inject Galaxy Background
         if bg then
             local galaxy = Instance.new("ImageLabel")
             galaxy.Size = UDim2.new(1.5, 0, 1.5, 0); galaxy.Position = UDim2.new(-0.25, 0, -0.25, 0)
             galaxy.BackgroundTransparency = 1; galaxy.Image = "rbxassetid://7148785474"; galaxy.ImageTransparency = 0.2; galaxy.ZIndex = 0
             galaxy.Parent = bg
         end
+        
         for _, desc in ipairs(mainFrame:GetDescendants()) do
             if desc:IsA("Frame") and desc.Name ~= "Background" then
                 desc.BackgroundTransparency = 0.3
@@ -80,23 +94,34 @@ task.spawn(function()
                     local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 8); c.Parent = desc
                 end
             end
+            -- Hide Default Rayfield Images (makes it look custom)
             if desc:IsA("ImageLabel") and desc.Name ~= "ImageLabel" then desc.Visible = false end
+            -- Add Hover Animations to Buttons
             if desc:IsA("TextButton") then
                 local scale = Instance.new("UIScale", desc)
                 desc.MouseEnter:Connect(function() TweenService:Create(scale, TweenInfo.new(0.2), {Scale = 1.05}):Play() end)
                 desc.MouseLeave:Connect(function() TweenService:Create(scale, TweenInfo.new(0.2), {Scale = 1}):Play() end)
+                desc.MouseButton1Down:Connect(function() TweenService:Create(scale, TweenInfo.new(0.1), {Scale = 0.95}):Play() end)
+                desc.MouseButton1Up:Connect(function() TweenService:Create(scale, TweenInfo.new(0.2), {Scale = 1.05}):Play() end)
             end
         end
     end
 end)
 
--- === STATE & HELPERS ===
+-- 5. STATE & HELPERS
 local Connections = {}
-local State = { Noclip = false, Fly = false, CarFly = false, Fling = false, ESP = false, InfJump = false, Aimbot = false, Hitbox = false, FlySpeed = 50, AimbotFOV = 120, HitboxSize = 10, OriginalSizes = {}, ESPObjects = {} }
+local State = { 
+    Noclip = false, Fly = false, CarFly = false, Fling = false, ESP = false, 
+    InfJump = false, Aimbot = false, Hitbox = false, 
+    FlySpeed = 50, AimbotFOV = 120, HitboxSize = 10, 
+    OriginalSizes = {}, ESPObjects = {} 
+}
+
 local function getRoot(char) return char and (char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")) end
 local function getHum(char) return char and char:FindFirstChildOfClass("Humanoid") end
+local function addConnection(conn) table.insert(Connections, conn) end
 
--- === NOCLIP ===
+-- 6. MOVEMENT (Noclip, CFrame Fly, Car Fly, Inf Jump)
 local noclipLoop
 local function toggleNoclip(enabled)
     State.Noclip = enabled
@@ -106,7 +131,7 @@ local function toggleNoclip(enabled)
                 for _, c in pairs(player.Character:GetDescendants()) do if c:IsA("BasePart") then c.CanCollide = false end end
             end
         end)
-        table.insert(Connections, noclipLoop)
+        addConnection(noclipLoop)
     else
         if noclipLoop then noclipLoop:Disconnect() end
         if player.Character then
@@ -115,7 +140,6 @@ local function toggleNoclip(enabled)
     end
 end
 
--- === CFrame Fly ===
 local cflyLoop
 local function toggleCFly(enabled)
     State.Fly = enabled
@@ -132,14 +156,13 @@ local function toggleCFly(enabled)
             local objSpaceVel = CFrame.new(camPos, Vector3.new(headPos.X, camPos.Y, headPos.Z)):VectorToObjectSpace(moveDir)
             head.CFrame = CFrame.new(headPos) * (camCF - camPos) * CFrame.new(objSpaceVel)
         end)
-        table.insert(Connections, cflyLoop)
+        addConnection(cflyLoop)
     else
         if cflyLoop then cflyLoop:Disconnect() end
         hum.PlatformStand = false; head.Anchored = false
     end
 end
 
--- === Car Fly ===
 local carLoop
 local function toggleCarFly(enabled)
     State.CarFly = enabled
@@ -160,14 +183,20 @@ local function toggleCarFly(enabled)
             if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then move -= Vector3.new(0,1,0) end
             bv.Velocity = move * State.FlySpeed; bg.CFrame = Camera.CFrame
         end)
-        table.insert(Connections, carLoop)
+        addConnection(carLoop)
     else
         if carLoop then carLoop:Disconnect() end
         for _, v in pairs(root:GetChildren()) do if v:IsA("BodyGyro") or v:IsA("BodyVelocity") then v:Destroy() end end
     end
 end
 
--- === VOID TP ===
+UserInputService.JumpRequest:Connect(function()
+    if State.InfJump and player.Character then
+        local hum = getHum(player.Character); if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+    end
+end)
+
+-- 7. TROLLING (Fling, Void TP)
 local function voidTP()
     local root = getRoot(player.Character)
     if root then
@@ -176,7 +205,6 @@ local function voidTP()
     end
 end
 
--- === FLING ===
 local flingDied
 local function toggleFling(enabled)
     State.Fling = enabled
@@ -205,7 +233,7 @@ local function toggleFling(enabled)
     end
 end
 
--- === COMBAT (Aimbot & Hitbox) ===
+-- 8. COMBAT (Aimbot, Hitbox, ESP)
 RunService.RenderStepped:Connect(function()
     if not State.Aimbot then return end
     local closest, dist = nil, State.AimbotFOV
@@ -236,7 +264,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- === ESP ===
 local function updateESP()
     for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
         if p ~= player and p.Character and not State.ESPObjects[p] then
@@ -248,21 +275,14 @@ local function updateESP()
 end
 task.spawn(function() while task.wait(1) do if State.ESP then updateESP() end end end)
 
--- === INFINITE JUMP ===
-UserInputService.JumpRequest:Connect(function()
-    if State.InfJump and player.Character then
-        local hum = getHum(player.Character); if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
-    end
-end)
-
--- === UI TABS ===
+-- 9. UI TABS
 local CombatTab = Window:CreateTab("⚔️ Combat")
 local MoveTab = Window:CreateTab("🏃 Movement")
 local VisualTab = Window:CreateTab("👁️ Visuals")
 local TrollTab = Window:CreateTab("😈 Trolling")
 local SettingsTab = Window:CreateTab("⚙️ Settings")
 
--- Combat
+-- Combat Tab
 CombatTab:CreateSection("Aimbot")
 CombatTab:CreateToggle({ Name = "Camera Aimbot", CurrentValue = false, Callback = function(v) State.Aimbot = v end })
 CombatTab:CreateSlider({ Name = "Aimbot FOV", Range = {30, 360}, Increment = 10, CurrentValue = 120, Callback = function(v) State.AimbotFOV = v end })
@@ -270,7 +290,7 @@ CombatTab:CreateSection("Hitbox")
 CombatTab:CreateToggle({ Name = "Hitbox Expander", CurrentValue = false, Callback = function(v) State.Hitbox = v end })
 CombatTab:CreateSlider({ Name = "Hitbox Size", Range = {1, 50}, Increment = 1, CurrentValue = 10, Callback = function(v) State.HitboxSize = v end })
 
--- Movement
+-- Movement Tab
 MoveTab:CreateSection("Speed")
 MoveTab:CreateSlider({ Name = "WalkSpeed", Range = {16, 500}, Increment = 1, CurrentValue = 16, Callback = function(v) if getHum(player.Character) then getHum(player.Character).WalkSpeed = v end end })
 MoveTab:CreateToggle({ Name = "Infinite Jump", CurrentValue = false, Callback = function(v) State.InfJump = v end })
@@ -280,7 +300,7 @@ MoveTab:CreateSlider({ Name = "Fly Speed", Range = {10, 200}, Increment = 5, Cur
 MoveTab:CreateToggle({ Name = "CarFly (Vehicle)", CurrentValue = false, Callback = function(v) toggleCarFly(v) end })
 MoveTab:CreateToggle({ Name = "Noclip", CurrentValue = false, Callback = function(v) toggleNoclip(v) end })
 
--- Visuals
+-- Visuals Tab
 VisualTab:CreateSection("ESP")
 VisualTab:CreateToggle({ Name = "Highlight ESP", CurrentValue = false, Callback = function(v) State.ESP = v end })
 VisualTab:CreateSection("Environment")
@@ -289,12 +309,12 @@ VisualTab:CreateToggle({ Name = "Fullbright", CurrentValue = false, Callback = f
     else Lighting.Brightness = 1; Lighting.GlobalShadows = true end
 end })
 
--- Trolling
+-- Trolling Tab
 TrollTab:CreateSection("Devastation")
 TrollTab:CreateToggle({ Name = "Fling (Touch Player)", CurrentValue = false, Callback = function(v) toggleFling(v) end })
 TrollTab:CreateButton({ Name = "☠️ VOID TP (Fall Through Floor)", Callback = function() voidTP() end })
 
--- Settings
+-- Settings Tab
 SettingsTab:CreateSection("Script")
 SettingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
     getgenv().excluseHubRunning = false
@@ -309,4 +329,4 @@ SettingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
     end
 end })
 
-Rayfield:Notify({ Title = "Overkill Loaded", Content = "Optimized for Xeno. Enjoy.", Duration = 6 })
+Rayfield:Notify({ Title = "Overkill Loaded", Content = "Xeno bypass applied. Go crazy.", Duration = 6 })
