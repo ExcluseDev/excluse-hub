@@ -203,6 +203,7 @@ local Scripts = {
     ["142823291"] = { Name = "Murder Mystery 2", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/mm2.lua" },
     ["4588604953"] = { Name = "Criminality", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/criminality.lua" },
     ["1537690962"] = { Name = "Bee Swarm Simulator", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/bss.lua" }
+    ["112731528776884"] = { Name = "KNIFE DUELS", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/knifeduels.lua" }
 }
 local UNIVERSAL_URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/universal.lua"
 
