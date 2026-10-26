@@ -1,13 +1,12 @@
 --[[
-    excluse hub | Hypershot (Advanced Galaxy Edition)
+    excluse hub | Hypershot (Low-Detection Legit Mode)
+    ⚠️ WARNING: Hypershot bans ALL accounts for cheating. Use at your own risk.
 --]]
 local player = game:GetService("Players").LocalPlayer
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local VirtualUser = game:GetService("VirtualUser")
 local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- === MINIMAL INTRO ===
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
@@ -46,7 +45,7 @@ local VoidGlassTheme = {
 }
 
 local Window = Rayfield:CreateWindow({
-    Name = "excluse hub | Hypershot", LoadingTitle = "Loading Hypershot...", LoadingSubtitle = "v1.0",
+    Name = "excluse hub | Hypershot (Legit)", LoadingTitle = "Loading Legit Mode...", LoadingSubtitle = "v1.0 Low-Risk",
     Theme = VoidGlassTheme, KeySystem = false, ConfigurationSaving = { Enabled = false }
 })
 
@@ -83,28 +82,23 @@ task.spawn(function()
     end
 end)
 
--- === STATE ===
+-- === STATE (LEGIT ONLY) ===
 local State = {
-    aimbot = false, aimbotFOV = 120, aimbotSmoothness = 0.2, aimbotPart = "Head", aimbotTeamCheck = true,
-    silentAim = false, silentAimPart = "Head",
-    triggerbot = false, triggerDelay = 0.1,
-    espEnabled = false, espMaxDistance = 500,
-    noRecoil = false, noSpread = false, rapidFire = false,
-    hitboxExpander = false, hitboxSize = 5,
-    walkspeed = 16, jumpPower = 50, fly = false, flySpeed = 50,
-    infiniteJump = false,
-    autoRespawn = false,
-    highlights = {}
+    aimAssist = false,
+    aimFOV = 60, -- Small FOV to avoid snapping to random players
+    aimSmoothness = 8, -- High smoothing = slow, human-like tracking (1-20)
+    aimPart = "Head",
+    humanJitter = 0.05, -- Adds tiny random movement to mimic human hand shake
 }
 
--- === HELPER: Get Target ===
-local function getTarget(partName, fov)
-    local closest, dist = nil, fov
+-- === HELPER: Get Target (Small FOV) ===
+local function getTarget()
+    local closest, dist = nil, State.aimFOV
     local cam = Workspace.CurrentCamera
     for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
         if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            if State.aimbotTeamCheck and p.Team and player.Team and p.Team == player.Team then continue end
-            local part = p.Character:FindFirstChild(partName) or p.Character:FindFirstChild("Head")
+            if p.Team and player.Team and p.Team == player.Team then continue end
+            local part = p.Character:FindFirstChild(State.aimPart) or p.Character:FindFirstChild("Head")
             if part then
                 local screenPos, onScreen = cam:WorldToViewportPoint(part.Position)
                 if onScreen then
@@ -121,135 +115,55 @@ local function getTarget(partName, fov)
     return closest
 end
 
--- === AIMBOT ===
+-- === HUMANIZED AIM ASSIST (NO SNAP) ===
 RunService.RenderStepped:Connect(function()
-    if not State.aimbot then return end
-    local target = getTarget(State.aimbotPart, State.aimbotFOV)
-    if target then
-        local cam = Workspace.CurrentCamera
-        local targetCFrame = CFrame.new(cam.CFrame.Position, target.Position)
-        cam.CFrame = cam.CFrame:Lerp(targetCFrame, State.aimbotSmoothness)
-    end
-end)
-
--- === SILENT AIM ===
-RunService.RenderStepped:Connect(function()
-    if not State.silentAim then return end
-    local target = getTarget(State.silentAimPart, 360)
+    if not State.aimAssist then return end
+    local target = getTarget()
     if target then
         local cam = Workspace.CurrentCamera
         local screenPos, onScreen = cam:WorldToViewportPoint(target.Position)
         if onScreen then
+            local center = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+            local deltaX = (screenPos.X - center.X)
+            local deltaY = (screenPos.Y - center.Y)
+
+            -- Convert smoothing (1-20) to a multiplier (1.0 down to 0.05)
+            local smoothMult = 1 / State.aimSmoothness
+            local moveX = deltaX * smoothMult
+            local moveY = deltaY * smoothMult
+
+            -- Add human jitter
+            local jitterX = (math.random() - 0.5) * State.humanJitter * 20
+            local jitterY = (math.random() - 0.5) * State.humanJitter * 20
+
             pcall(function()
-                mousemoverel(screenPos.X - cam.ViewportSize.X / 2, screenPos.Y - cam.ViewportSize.Y / 2)
+                mousemoverel(moveX + jitterX, moveY + jitterY)
             end)
         end
     end
 end)
 
--- === TRIGGERBOT ===
-task.spawn(function()
-    while State.triggerbot and getgenv().excluseHubRunning do
-        local target = getTarget(State.aimbotPart, State.aimbotFOV)
-        if target then
-            pcall(function()
-                VirtualUser:CaptureController()
-                VirtualUser:ClickButton1(Vector2.new(0, 0))
-            end)
-        end
-        task.wait(State.triggerDelay)
-    end
-end)
+-- === UI CONSTRUCTION ===
+local mainTab = Window:CreateTab("⚔️ Aim Assist")
+local settingsTab = Window:CreateTab("⚙️ Settings")
 
--- === ESP ===
-RunService.Heartbeat:Connect(function()
-    if not getgenv().excluseHubRunning then return end
-    for char, h in pairs(State.highlights) do
-        if not char.Parent or not char:FindFirstChild("Humanoid") then
-            h:Destroy(); State.highlights[char] = nil
-        end
-    end
-    if State.espEnabled then
-        local cam = Workspace.CurrentCamera
-        for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
-            if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                local dist = (p.Character.HumanoidRootPart.Position - cam.CFrame.Position).Magnitude
-                if dist <= State.espMaxDistance then
-                    if not State.highlights[p.Character] then
-                        local h = Instance.new("Highlight")
-                        h.OutlineColor = Color3.fromRGB(255, 255, 255)
-                        h.FillTransparency = 0.6
-                        h.Parent = p.Character
-                        State.highlights[p.Character] = h
-                    end
-                    State.highlights[p.Character].FillColor = Color3.fromRGB(255, 50, 50)
-                else
-                    if State.highlights[p.Character] then
-                        State.highlights[p.Character]:Destroy()
-                        State.highlights[p.Character] = nil
-                    end
-                end
-            end
-        end
-    end
-end)
+mainTab:CreateSection("Humanized Aim Assist")
+mainTab:CreateToggle({ Name = "Enable Aim Assist", CurrentValue = false, Callback = function(v) State.aimAssist = v end })
+mainTab:CreateSlider({ Name = "Aim FOV (Keep Low)", Range = {10, 120}, Increment = 5, CurrentValue = 60, Callback = function(v) State.aimFOV = v end })
+mainTab:CreateSlider({ Name = "Smoothing (1=Fast, 20=Slow/Human)", Range = {1, 20}, Increment = 1, CurrentValue = 8, Callback = function(v) State.aimSmoothness = v end })
+mainTab:CreateSlider({ Name = "Human Jitter", Range = {0, 0.2}, Increment = 0.01, CurrentValue = 0.05, Callback = function(v) State.humanJitter = v end })
+mainTab:CreateDropdown({ Name = "Target Part", Options = {"Head", "UpperTorso"}, CurrentOption = "Head", Callback = function(v) State.aimPart = v end })
 
--- === WEAPON MODS (PLACEHOLDERS) ===
--- These require hooking specific remotes or modifying weapon stats.
--- Currently just toggles state; actual implementation depends on game structure.
-RunService.Heartbeat:Connect(function()
-    if State.noRecoil then
-        -- Placeholder: Hook camera recoil or weapon kickback
+settingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
+    getgenv().excluseHubRunning = false
+    State.aimAssist = false
+    task.wait(0.3)
+    pcall(function() Window:Destroy() end)
+    local pg = player:FindFirstChild("PlayerGui")
+    if pg then
+        if pg:FindFirstChild("Rayfield") then pg.Rayfield:Destroy() end
+        if pg:FindFirstChild("RayfieldToggleScreen") then pg.RayfieldToggleScreen:Destroy() end
     end
-    if State.noSpread then
-        -- Placeholder: Hook weapon spread
-    end
-    if State.rapidFire then
-        -- Placeholder: Hook fire rate remote
-    end
-end)
+end })
 
--- === HITBOX EXPANDER ===
-local function applyHitboxExpander()
-    for _, p in ipairs(game:GetService("Players"):GetPlayers()) do
-        if p ~= player and p.Character then
-            local head = p.Character:FindFirstChild("Head")
-            if head then
-                if State.hitboxExpander then
-                    head.Size = Vector3.new(State.hitboxSize, State.hitboxSize, State.hitboxSize)
-                    head.Transparency = 0.5
-                    head.CanCollide = false
-                else
-                    head.Size = Vector3.new(1, 1, 1)
-                    head.Transparency = 0
-                    head.CanCollide = true
-                end
-            end
-        end
-    end
-end
-
-RunService.Heartbeat:Connect(function()
-    if State.hitboxExpander then
-        applyHitboxExpander()
-    end
-end)
-
--- === FLY ===
-local flyConnection
-local function toggleFly(enabled)
-    State.fly = enabled
-    local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-    if enabled then
-        local bg = Instance.new("BodyGyro", hrp); bg.P = 9e4; bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9); bg.CFrame = hrp.CFrame
-        local bv = Instance.new("BodyVelocity", hrp); bv.Velocity = Vector3.new(0,0,0); bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        flyConnection = RunService.RenderStepped:Connect(function()
-            if not State.fly or not hrp.Parent then if flyConnection then flyConnection:Disconnect() end return end
-            local cam = Workspace.CurrentCamera; local move = Vector3.new()
-            if UserInputService:IsKeyDown(Enum.KeyCode.W) then move += cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.S) then move -= cam.CFrame.LookVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.A) then move -= cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.D) then move += cam.CFrame.RightVector end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then move += Vector3.new(0,1,0) end
-            if UserInputService:IsKeyDown(Enum.KeyCode.Left
+Rayfield:Notify({ Title = "Hypershot Loaded", Content = "Low-Detection Legit Mode. No rage features.", Duration = 5 })
