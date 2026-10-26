@@ -1,5 +1,5 @@
 --[[
-    excluse hub | Murderer Mystery 2 (True Fling Physics Fix)
+    excluse hub | Murder Mystery 2 (Gun Teleport & Rejoin Update)
 --]]
 getgenv().SecureMode = false
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
 getgenv().excluseHubRunning = true
 
@@ -61,6 +62,16 @@ local function getRole(char)
     if char:FindFirstChild("Knife") then return "Murderer" end
     if char:FindFirstChild("Gun") then return "Sheriff" end
     return "Innocent"
+end
+
+-- === HELPER: Find Dropped Gun ===
+local function getDroppedGun()
+    for _, v in pairs(Workspace:GetDescendants()) do
+        if v.Name == "Gun" and (v:IsA("Model") or v:IsA("BasePart")) then
+            return v
+        end
+    end
+    return nil
 end
 
 -- === INSTANT ESP SYSTEM ===
@@ -296,6 +307,25 @@ mainTab:CreateButton({
     end,
 })
 
+mainTab:CreateButton({
+    Name = "🔫 Teleport to Dropped Gun",
+    Callback = function()
+        local gun = getDroppedGun()
+        if gun and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local pos
+            if gun:IsA("Model") then
+                pos = gun:GetPivot().Position
+            else
+                pos = gun.Position
+            end
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0, 2, 0))
+            Rayfield:Notify({ Title = "Teleport", Content = "Teleported to Gun!", Duration = 2 })
+        else
+            Rayfield:Notify({ Title = "Teleport", Content = "No dropped gun found!", Duration = 2 })
+        end
+    end,
+})
+
 -- Farm Tab
 farmTab:CreateSection("Coin Automation")
 farmTab:CreateToggle({ Name = "Auto Collect Coins", CurrentValue = false, Callback = function(v) State.autoCoinFarm = v end })
@@ -364,6 +394,19 @@ playerTab:CreateSlider({ Name = "Fly Speed", Range = {10, 200}, Increment = 5, C
 playerTab:CreateToggle({ Name = "Infinite Jump", CurrentValue = false, Callback = function(v) State.infJump = v end })
 
 -- Settings (FOOLPROOF UNLOAD)
+settingsTab:CreateSection("Server Management")
+settingsTab:CreateButton({ 
+    Name = "🔄 Rejoin Server", 
+    Callback = function()
+        Rayfield:Notify({ Title = "Rejoining", Content = "Rejoining the same server...", Duration = 3 })
+        task.wait(0.5)
+        pcall(function()
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
+        end)
+    end 
+})
+
+settingsTab:CreateSection("Script Management")
 settingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
     getgenv().excluseHubRunning = false
     for k, v in pairs(State) do if type(v) == "boolean" then State[k] = false end end
@@ -383,4 +426,4 @@ settingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
     end
 end })
 
-Rayfield:Notify({ Title = "MM2 Loaded", Content = "True Touch Fling & Anti-Fling ready.", Duration = 5 })
+Rayfield:Notify({ Title = "MM2 Loaded", Content = "Gun teleport & Rejoin ready.", Duration = 5 })
