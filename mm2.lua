@@ -1,6 +1,21 @@
 --[[
-    excluse hub | Murder Mystery 2 (Random TP Update)
+    excluse hub | Murder Mystery 2 (Galaxy Glass Edition)
 --]]
+local player = game:GetService("Players").LocalPlayer
+local TweenService = game:GetService("TweenService")
+
+-- === MINIMAL INTRO ===
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.IgnoreGuiInset = true
+local bg = Instance.new("Frame", gui); bg.Size = UDim2.new(1,0,1,0); bg.BackgroundColor3 = Color3.fromRGB(5,5,8)
+local txt = Instance.new("TextLabel", bg); txt.Size = UDim2.new(0,200,0,100); txt.Position = UDim2.new(0.5,-100,0.5,-50); txt.BackgroundTransparency = 1; txt.Text = "EXC"; txt.TextColor3 = Color3.new(1,1,1); txt.TextScaled = true; txt.Font = Enum.Font.GothamBlack; txt.TextTransparency = 1
+TweenService:Create(txt, TweenInfo.new(0.3), {TextTransparency = 0}):Play()
+task.wait(0.7)
+TweenService:Create(bg, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+TweenService:Create(txt, TweenInfo.new(0.3), {TextTransparency = 1}):Play()
+task.wait(0.3)
+gui:Destroy()
+
 getgenv().SecureMode = false
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local Players = game:GetService("Players")
@@ -9,47 +24,76 @@ local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TeleportService = game:GetService("TeleportService")
-local player = Players.LocalPlayer
 getgenv().excluseHubRunning = true
 
-local GalaxyTheme = {
-    TextColor = Color3.fromRGB(240, 245, 255), Background = Color3.fromRGB(10, 12, 18),
-    Topbar = Color3.fromRGB(15, 18, 28), Shadow = Color3.fromRGB(0, 0, 0),
-    NotificationBackground = Color3.fromRGB(20, 25, 35), NotificationActionsBackground = Color3.fromRGB(30, 35, 45),
-    TabBackground = Color3.fromRGB(15, 18, 28), TabStroke = Color3.fromRGB(40, 45, 60),
-    TabBackgroundSelected = Color3.fromRGB(60, 100, 180), TabTextColor = Color3.fromRGB(150, 160, 180),
-    SelectedTabTextColor = Color3.fromRGB(255, 255, 255), ElementBackground = Color3.fromRGB(18, 22, 32),
-    ElementBackgroundHover = Color3.fromRGB(28, 35, 50), SecondaryElementBackground = Color3.fromRGB(15, 18, 28),
-    ElementStroke = Color3.fromRGB(45, 55, 75), SecondaryElementStroke = Color3.fromRGB(35, 45, 60),
-    SliderBackground = Color3.fromRGB(60, 100, 180), SliderProgress = Color3.fromRGB(180, 220, 255),
-    SliderStroke = Color3.fromRGB(100, 150, 220), ToggleBackground = Color3.fromRGB(30, 35, 50),
-    ToggleEnabled = Color3.fromRGB(80, 150, 255), ToggleDisabled = Color3.fromRGB(60, 60, 70),
-    ToggleEnabledStroke = Color3.fromRGB(150, 200, 255), ToggleDisabledStroke = Color3.fromRGB(80, 80, 90),
-    ToggleEnabledOuterStroke = Color3.fromRGB(120, 160, 220), ToggleDisabledOuterStroke = Color3.fromRGB(50, 50, 60),
-    DropdownSelected = Color3.fromRGB(60, 100, 180), DropdownUnselected = Color3.fromRGB(18, 22, 32),
-    InputBackground = Color3.fromRGB(15, 18, 28), InputStroke = Color3.fromRGB(50, 60, 80),
-    PlaceholderColor = Color3.fromRGB(120, 130, 150)
+local VoidGlassTheme = {
+    TextColor = Color3.fromRGB(255, 255, 255), Background = Color3.fromRGB(10, 10, 15),
+    Topbar = Color3.fromRGB(15, 15, 25), Shadow = Color3.fromRGB(0, 0, 0),
+    NotificationBackground = Color3.fromRGB(15, 15, 25), NotificationActionsBackground = Color3.fromRGB(25, 25, 40),
+    TabBackground = Color3.fromRGB(15, 15, 25), TabStroke = Color3.fromRGB(60, 60, 100),
+    TabBackgroundSelected = Color3.fromRGB(150, 50, 255), TabTextColor = Color3.fromRGB(180, 180, 200),
+    SelectedTabTextColor = Color3.fromRGB(255, 255, 255), ElementBackground = Color3.fromRGB(20, 20, 30),
+    ElementBackgroundHover = Color3.fromRGB(30, 30, 45), SecondaryElementBackground = Color3.fromRGB(10, 10, 15),
+    ElementStroke = Color3.fromRGB(80, 80, 120), SecondaryElementStroke = Color3.fromRGB(40, 40, 60),
+    SliderBackground = Color3.fromRGB(150, 50, 255), SliderProgress = Color3.fromRGB(0, 255, 255),
+    SliderStroke = Color3.fromRGB(200, 100, 255), ToggleBackground = Color3.fromRGB(30, 30, 45),
+    ToggleEnabled = Color3.fromRGB(0, 255, 255), ToggleDisabled = Color3.fromRGB(60, 60, 70),
+    ToggleEnabledStroke = Color3.fromRGB(255, 255, 255), ToggleDisabledStroke = Color3.fromRGB(80, 80, 90),
+    ToggleEnabledOuterStroke = Color3.fromRGB(0, 255, 255), ToggleDisabledOuterStroke = Color3.fromRGB(50, 50, 60),
+    DropdownSelected = Color3.fromRGB(150, 50, 255), DropdownUnselected = Color3.fromRGB(15, 15, 25),
+    InputBackground = Color3.fromRGB(10, 10, 15), InputStroke = Color3.fromRGB(80, 80, 120),
+    PlaceholderColor = Color3.fromRGB(120, 120, 140)
 }
 
 local Window = Rayfield:CreateWindow({
-    Name = "excluse hub | MM2", LoadingTitle = "Loading MM2...", LoadingSubtitle = "by excluse",
-    Theme = GalaxyTheme, KeySystem = false, ConfigurationSaving = { Enabled = false }
+    Name = "excluse hub | MM2", LoadingTitle = "Loading MM2...", LoadingSubtitle = "v1.621",
+    Theme = VoidGlassTheme, KeySystem = false, ConfigurationSaving = { Enabled = false }
 })
+
+-- === GALAXY UI OVERRIDE ===
+task.spawn(function()
+    task.wait(1)
+    local rayfieldGui = player:FindFirstChild("PlayerGui") and player:FindFirstChild("PlayerGui"):FindFirstChild("Rayfield")
+    if rayfieldGui and rayfieldGui:FindFirstChild("MainFrame") then
+        local mainFrame = rayfieldGui.MainFrame
+        local bg = mainFrame:FindFirstChild("Background")
+        if bg then
+            local galaxyImage = Instance.new("ImageLabel")
+            galaxyImage.Size = UDim2.new(1.5, 0, 1.5, 0); galaxyImage.Position = UDim2.new(-0.25, 0, -0.25, 0)
+            galaxyImage.BackgroundTransparency = 1; galaxyImage.Image = "rbxassetid://7148785474"; galaxyImage.ImageTransparency = 0.2; galaxyImage.ZIndex = 0
+            galaxyImage.Parent = bg
+            task.spawn(function()
+                while galaxyImage.Parent do
+                    TweenService:Create(galaxyImage, TweenInfo.new(15, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Position = UDim2.new(-0.3, 0, -0.2, 0)}):Play()
+                    task.wait(15)
+                    TweenService:Create(galaxyImage, TweenInfo.new(15, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Position = UDim2.new(-0.2, 0, -0.3, 0)}):Play()
+                    task.wait(15)
+                end
+            end)
+        end
+        for _, desc in ipairs(mainFrame:GetDescendants()) do
+            if desc:IsA("Frame") and desc.Name ~= "Background" then
+                desc.BackgroundTransparency = 0.3
+                if not desc:FindFirstChildOfClass("UICorner") then
+                    local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 8); c.Parent = desc
+                end
+            end
+            if desc:IsA("ImageLabel") and desc.Name ~= "GalaxyImage" then desc.Visible = false end
+        end
+    end
+end)
 
 local State = {
     fly = false, flySpeed = 50, infJump = false,
-    aimbot = false, silentAim = false, autoShoot = false,
     autoEquip = false, killAura = false, killAuraDistance = 20, autoPickup = false,
     murdererEsp = false, sheriffEsp = false, gunEsp = false, coinEsp = false,
     flingEnabled = false, antiFlingEnabled = true, flingRadius = 15,
     highlights = {},
     autoCoinFarm = false, coinFarmSpeed = 0.2
 }
-
 local aimbotConnection, jumpConnection, espConnection, flingConnection, antiFlingConnection
 local visitedCoins = {}
 
--- === HELPER: Get Roles ===
 local function getRole(char)
     if not char then return "Innocent" end
     local p = Players:GetPlayerFromCharacter(char)
@@ -64,17 +108,13 @@ local function getRole(char)
     return "Innocent"
 end
 
--- === HELPER: Find Dropped Gun ===
 local function getDroppedGun()
     for _, v in pairs(Workspace:GetDescendants()) do
-        if v.Name == "Gun" and (v:IsA("Model") or v:IsA("BasePart")) then
-            return v
-        end
+        if v.Name == "Gun" and (v:IsA("Model") or v:IsA("BasePart")) then return v end
     end
     return nil
 end
 
--- === INSTANT ESP SYSTEM ===
 espConnection = RunService.Heartbeat:Connect(function()
     if not getgenv().excluseHubRunning then return end
     for char, h in pairs(State.highlights) do
@@ -113,13 +153,11 @@ espConnection = RunService.Heartbeat:Connect(function()
     end
 end)
 
--- === SKIDFLING (WORKING FLING METHOD) ===
 flingConnection = RunService.Heartbeat:Connect(function()
     if not getgenv().excluseHubRunning or not State.flingEnabled then return end
     local char = player.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     local hrp = char.HumanoidRootPart
-
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
             local targetChar = p.Character
@@ -143,7 +181,6 @@ antiFlingConnection = RunService.Heartbeat:Connect(function()
     char.HumanoidRootPart.RotVelocity = Vector3.new(0, 0, 0)
 end)
 
--- === ROLE SPECIFIC PLAYER FEATURES ===
 task.spawn(function()
     while getgenv().excluseHubRunning do
         pcall(function()
@@ -191,7 +228,6 @@ task.spawn(function()
     end
 end)
 
--- === AUTO COIN FARM ===
 task.spawn(function()
     while getgenv().excluseHubRunning do
         if State.autoCoinFarm then
@@ -217,7 +253,6 @@ task.spawn(function()
     end
 end)
 
--- === AIMBOT / SILENT AIM ===
 local function getMurderer()
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character and getRole(p.Character) == "Murderer" then return p.Character end
@@ -243,7 +278,6 @@ aimbotConnection = RunService.RenderStepped:Connect(function()
     end
 end)
 
--- === AUTO SHOOT / STAB ===
 task.spawn(function()
     while getgenv().excluseHubRunning do
         if State.autoShoot then
@@ -265,7 +299,6 @@ task.spawn(function()
     end
 end)
 
--- === INFINITE JUMP ===
 jumpConnection = UserInputService.JumpRequest:Connect(function()
     if State.infJump and getgenv().excluseHubRunning then
         local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
@@ -273,7 +306,6 @@ jumpConnection = UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- === UI CONSTRUCTION ===
 local mainTab = Window:CreateTab("⚔️ Combat")
 local farmTab = Window:CreateTab("💰 Farm")
 local visualsTab = Window:CreateTab("👁️ Visuals")
@@ -281,7 +313,6 @@ local flingTab = Window:CreateTab("🌀 Fling")
 local playerTab = Window:CreateTab("🏃 Player")
 local settingsTab = Window:CreateTab("⚙️ Settings")
 
--- Combat
 mainTab:CreateSection("Aimbot")
 mainTab:CreateToggle({ Name = "Enable Aimbot (Locks Camera)", CurrentValue = false, Callback = function(v) State.aimbot = v end })
 mainTab:CreateToggle({ Name = "Silent Aim (Executor Dependent)", CurrentValue = false, Callback = function(v) State.silentAim = v end })
@@ -316,7 +347,6 @@ mainTab:CreateButton({
                 table.insert(validPlayers, p)
             end
         end
-        
         if #validPlayers > 0 then
             local target = validPlayers[math.random(1, #validPlayers)]
             if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -344,7 +374,6 @@ mainTab:CreateButton({
     end,
 })
 
--- Farm Tab
 farmTab:CreateSection("Coin Automation")
 farmTab:CreateToggle({ Name = "Auto Collect Coins", CurrentValue = false, Callback = function(v) State.autoCoinFarm = v end })
 farmTab:CreateSlider({ Name = "Farm Speed (Lower = Faster)", Range = {0.05, 1}, Increment = 0.05, Suffix = "s", CurrentValue = 0.2, Callback = function(v) State.coinFarmSpeed = v end })
@@ -355,7 +384,6 @@ farmTab:CreateToggle({ Name = "Coin ESP (Highlights Coins)", CurrentValue = fals
     if not v then for obj, h in pairs(State.highlights) do if obj.Name == "CoinContainer" or obj.Name == "Coin" then h:Destroy(); State.highlights[obj] = nil end end end
 end })
 
--- Visuals
 visualsTab:CreateSection("Instant Role ESP")
 visualsTab:CreateToggle({ Name = "Murderer ESP (Red)", CurrentValue = false, Callback = function(v) State.murdererEsp = v end })
 visualsTab:CreateToggle({ Name = "Sheriff ESP (Blue)", CurrentValue = false, Callback = function(v) State.sheriffEsp = v end })
@@ -371,14 +399,12 @@ visualsTab:CreateToggle({ Name = "Fullbright", CurrentValue = false, Callback = 
     else l.Ambient = Color3.fromRGB(70,70,70); l.OutdoorAmbient = Color3.fromRGB(128,128,128); l.Brightness = 1 end
 end })
 
--- Fling Tab
 flingTab:CreateSection("Fling Settings")
 flingTab:CreateToggle({ Name = "Enable Touch Fling (SkidFling)", CurrentValue = false, Callback = function(v) State.flingEnabled = v end })
 flingTab:CreateSlider({ Name = "Fling Radius", Range = {5, 30}, Increment = 1, CurrentValue = 15, Callback = function(v) State.flingRadius = v end })
 flingTab:CreateSection("Protection")
 flingTab:CreateToggle({ Name = "Anti-Fling (Self Protection)", CurrentValue = true, Callback = function(v) State.antiFlingEnabled = v end })
 
--- Player
 playerTab:CreateSection("Movement")
 playerTab:CreateSlider({ Name = "WalkSpeed", Range = {16, 500}, Increment = 1, CurrentValue = 16, Callback = function(v)
     local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid"); if h then h.WalkSpeed = v end
@@ -411,16 +437,13 @@ end })
 playerTab:CreateSlider({ Name = "Fly Speed", Range = {10, 200}, Increment = 5, CurrentValue = 50, Callback = function(v) State.flySpeed = v end })
 playerTab:CreateToggle({ Name = "Infinite Jump", CurrentValue = false, Callback = function(v) State.infJump = v end })
 
--- Settings (FOOLPROOF UNLOAD)
 settingsTab:CreateSection("Server Management")
 settingsTab:CreateButton({ 
     Name = "🔄 Rejoin Server", 
     Callback = function()
         Rayfield:Notify({ Title = "Rejoining", Content = "Rejoining the same server...", Duration = 3 })
         task.wait(0.5)
-        pcall(function()
-            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
-        end)
+        pcall(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, player) end)
     end 
 })
 
@@ -444,4 +467,4 @@ settingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
     end
 end })
 
-Rayfield:Notify({ Title = "MM2 Loaded", Content = "Random TP added. Ready to go.", Duration = 5 })
+Rayfield:Notify({ Title = "MM2 Loaded", Content = "Galaxy Glass UI active.", Duration = 5 })
