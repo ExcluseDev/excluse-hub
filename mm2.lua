@@ -1,5 +1,5 @@
 --[[
-    excluse hub | Murder Mystery 2
+    excluse hub | Murder Mystery 2 (Foolproof Unload Update)
 --]]
 getgenv().SecureMode = false
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -37,8 +37,13 @@ local Window = Rayfield:CreateWindow({
 local State = {
     fly = false, flySpeed = 50, infJump = false,
     aimbot = false, silentAim = false, autoShoot = false,
-    esp = false, highlights = {}
+    esp = false, coinEsp = false, highlights = {},
+    autoCoinFarm = false, coinFarmSpeed = 0.2
 }
+
+-- Variables to store connections so we can kill them on unload
+local aimbotConnection
+local jumpConnection
 
 -- === HELPER: Get Roles ===
 local function getRole(char)
@@ -59,9 +64,9 @@ local function createESP()
         if p ~= player and p.Character then
             if not State.highlights[p.Name] or not State.highlights[p.Name].Parent then
                 local role = getRole(p.Character)
-                local color = Color3.fromRGB(0, 255, 0) -- Innocent = Green
-                if role == "Murderer" then color = Color3.fromRGB(255, 0, 0) -- Red
-                elseif role == "Sheriff" then color = Color3.fromRGB(0, 150, 255) end -- Blue
+                local color = Color3.fromRGB(0, 255, 0)
+                if role == "Murderer" then color = Color3.fromRGB(255, 0, 0)
+                elseif role == "Sheriff" then color = Color3.fromRGB(0, 150, 255) end
 
                 local h = Instance.new("Highlight")
                 h.FillColor = color
@@ -83,12 +88,45 @@ local function createESP()
     end
 end
 
+-- === COIN ESP ===
+local function createCoinESP()
+    for _, v in pairs(Workspace:GetDescendants()) do
+        if v.Name == "CoinContainer" and v:IsA("Model") and not State.highlights[v] then
+            local h = Instance.new("Highlight")
+            h.FillColor = Color3.fromRGB(255, 215, 0)
+            h.OutlineColor = Color3.fromRGB(255, 255, 255)
+            h.Parent = v
+            State.highlights[v] = h
+        end
+    end
+end
+
 task.spawn(function()
     while getgenv().excluseHubRunning do
-        if State.esp then
-            pcall(createESP)
-        end
+        if State.esp then pcall(createESP) end
+        if State.coinEsp then pcall(createCoinESP) end
         task.wait(1)
+    end
+end)
+
+-- === AUTO COIN FARM ===
+task.spawn(function()
+    while getgenv().excluseHubRunning do
+        if State.autoCoinFarm then
+            pcall(function()
+                local char = player.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    for _, v in pairs(Workspace:GetDescendants()) do
+                        if v.Name == "CoinContainer" and v:IsA("Model") then
+                            local coinPos = v:GetModelCFrame().Position
+                            char:MoveTo(coinPos)
+                            task.wait(State.coinFarmSpeed)
+                        end
+                    end
+                end
+            end)
+        end
+        task.wait(0.5)
     end
 end)
 
@@ -96,15 +134,14 @@ end)
 local function getMurderer()
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
-            if getRole(p.Character) == "Murderer" then
-                return p.Character
-            end
+            if getRole(p.Character) == "Murderer" then return p.Character end
         end
     end
     return nil
 end
 
-RunService.RenderStepped:Connect(function()
+-- Stored in a variable so we can disconnect it on unload
+aimbotConnection = RunService.RenderStepped:Connect(function()
     if not getgenv().excluseHubRunning then return end
     if State.aimbot or State.silentAim then
         local target = getMurderer()
@@ -112,15 +149,10 @@ RunService.RenderStepped:Connect(function()
             local targetPart = target:FindFirstChild("Head") or target:FindFirstChild("HumanoidRootPart")
             if targetPart then
                 local cam = Workspace.CurrentCamera
-                if State.aimbot then
-                    cam.CFrame = CFrame.new(cam.CFrame.Position, targetPart.Position)
-                end
+                if State.aimbot then cam.CFrame = CFrame.new(cam.CFrame.Position, targetPart.Position) end
                 if State.silentAim then
-                    -- Simple silent aim via mouse position (Executor dependent)
                     local screenPos, onScreen = cam:WorldToViewportPoint(targetPart.Position)
-                    if onScreen then
-                        pcall(function() mousemoverel(screenPos.X - cam.ViewportSize.X/2, screenPos.Y - cam.ViewportSize.Y/2) end)
-                    end
+                    if onScreen then pcall(function() mousemoverel(screenPos.X - cam.ViewportSize.X/2, screenPos.Y - cam.ViewportSize.Y/2) end) end
                 end
             end
         end
@@ -137,7 +169,6 @@ task.spawn(function()
                 if myRole == "Sheriff" then
                     pcall(function() game:GetService("VirtualUser"):ClickButton1(Vector2.new(0,0)) end)
                 elseif myRole == "Murderer" then
-                    -- Auto stab logic (requires being close)
                     local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
                     local targetRoot = murderer:FindFirstChild("HumanoidRootPart")
                     if myRoot and targetRoot and (myRoot.Position - targetRoot.Position).Magnitude < 5 then
@@ -150,8 +181,17 @@ task.spawn(function()
     end
 end)
 
+-- === INFINITE JUMP ===
+jumpConnection = UserInputService.JumpRequest:Connect(function()
+    if State.infJump and getgenv().excluseHubRunning then
+        local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end
+    end
+end)
+
 -- === UI CONSTRUCTION ===
 local mainTab = Window:CreateTab("⚔️ Combat")
+local farmTab = Window:CreateTab("💰 Farm")
 local visualsTab = Window:CreateTab("👁️ Visuals")
 local playerTab = Window:CreateTab("🏃 Player")
 local settingsTab = Window:CreateTab("⚙️ Settings")
@@ -162,13 +202,43 @@ mainTab:CreateToggle({ Name = "Enable Aimbot (Locks Camera)", CurrentValue = fal
 mainTab:CreateToggle({ Name = "Silent Aim (Executor Dependent)", CurrentValue = false, Callback = function(v) State.silentAim = v end })
 mainTab:CreateToggle({ Name = "Auto Shoot / Stab", CurrentValue = false, Callback = function(v) State.autoShoot = v end })
 
+-- Farm Tab
+farmTab:CreateSection("Coin Automation")
+farmTab:CreateToggle({
+    Name = "Auto Collect Coins",
+    CurrentValue = false,
+    Callback = function(v) State.autoCoinFarm = v end,
+})
+farmTab:CreateSlider({
+    Name = "Farm Speed (Lower = Faster)",
+    Range = {0.05, 1},
+    Increment = 0.05,
+    Suffix = "s",
+    CurrentValue = 0.2,
+    Callback = function(v) State.coinFarmSpeed = v end,
+})
+farmTab:CreateSection("Visuals")
+farmTab:CreateToggle({
+    Name = "Coin ESP (Highlights Coins)",
+    CurrentValue = false,
+    Callback = function(v)
+        State.coinEsp = v
+        if not v then
+            for _, h in pairs(State.highlights) do
+                if h and h.Parent and h.Parent.Name == "CoinContainer" then h:Destroy() end
+            end
+        end
+    end,
+})
+
 -- Visuals
 visualsTab:CreateSection("ESP")
-visualsTab:CreateToggle({ Name = "Player & Gun ESP", CurrentValue = false, Callback = function(v) 
-    State.esp = v 
+visualsTab:CreateToggle({ Name = "Player & Gun ESP", CurrentValue = false, Callback = function(v)
+    State.esp = v
     if not v then
-        for _, h in pairs(State.highlights) do if h then h:Destroy() end end
-        State.highlights = {}
+        for _, h in pairs(State.highlights) do
+            if h and h.Parent and h.Parent:IsA("Model") and h.Parent.Name ~= "CoinContainer" then h:Destroy() end
+        end
     end
 end })
 visualsTab:CreateToggle({ Name = "Fullbright", CurrentValue = false, Callback = function(v)
@@ -209,25 +279,40 @@ playerTab:CreateToggle({ Name = "Fly", CurrentValue = false, Callback = function
 end })
 playerTab:CreateSlider({ Name = "Fly Speed", Range = {10, 200}, Increment = 5, CurrentValue = 50, Callback = function(v) State.flySpeed = v end })
 playerTab:CreateToggle({ Name = "Infinite Jump", CurrentValue = false, Callback = function(v) State.infJump = v end })
-UserInputService.JumpRequest:Connect(function()
-    if State.infJump and getgenv().excluseHubRunning then
-        local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-        if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end
-    end
-end)
 
--- Settings
+-- Settings (THE FOOLPROOF UNLOAD)
 settingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
+    -- 1. Kill the global flag so loops stop
     getgenv().excluseHubRunning = false
-    State.fly = false; State.infJump = false; State.esp = false; State.aimbot = false; State.silentAim = false; State.autoShoot = false
-    for _, h in pairs(State.highlights) do if h then h:Destroy() end end
-    task.wait(0.3)
+    
+    -- 2. Turn off all state variables
+    for k, v in pairs(State) do
+        if type(v) == "boolean" then State[k] = false end
+    end
+
+    -- 3. Disconnect the active RenderStepped and Input connections
+    if aimbotConnection then aimbotConnection:Disconnect() end
+    if jumpConnection then jumpConnection:Disconnect() end
+
+    -- 4. Clean up all ESP instances
+    for _, h in pairs(State.highlights) do 
+        if h and h.Parent then h:Destroy() end 
+    end
+    State.highlights = {}
+
+    -- 5. Wait for the game engine to catch up and stop all loops
+    task.wait(0.5)
+
+    -- 6. Destroy the Window and force-clean the PlayerGui
     pcall(function() Window:Destroy() end)
+    
     local pg = player:FindFirstChild("PlayerGui")
     if pg then
-        if pg:FindFirstChild("Rayfield") then pg.Rayfield:Destroy() end
-        if pg:FindFirstChild("RayfieldToggleScreen") then pg.RayfieldToggleScreen:Destroy() end
+        local rGui = pg:FindFirstChild("Rayfield")
+        if rGui then rGui:Destroy() end
+        local rToggle = pg:FindFirstChild("RayfieldToggleScreen")
+        if rToggle then rToggle:Destroy() end
     end
 end })
 
-Rayfield:Notify({ Title = "MM2 Loaded", Content = "Combat & Visual features ready.", Duration = 5 })
+Rayfield:Notify({ Title = "MM2 Loaded", Content = "Auto Coin Farm & Combat ready.", Duration = 5 })
