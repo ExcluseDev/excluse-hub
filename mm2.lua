@@ -1,5 +1,5 @@
 --[[
-    excluse hub | Murder Mystery 2 (True Role Detection Fix)
+    excluse hub | Murder Mystery 2 (Fling & Anti-Fling Update)
 --]]
 getgenv().SecureMode = false
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -40,32 +40,25 @@ local State = {
     aimbot = false, silentAim = false, autoShoot = false,
     autoEquip = false, killAura = false, killAuraDistance = 20, autoPickup = false,
     murdererEsp = false, sheriffEsp = false, gunEsp = false, coinEsp = false,
+    flingEnabled = false, antiFlingEnabled = true, flingSpeed = 1000,
     highlights = {},
     autoCoinFarm = false, coinFarmSpeed = 0.2
 }
 
-local aimbotConnection, jumpConnection, espConnection
+local aimbotConnection, jumpConnection, espConnection, flingConnection, antiFlingConnection
 
--- === HELPER: Get Roles (FIXED) ===
+-- === HELPER: Get Roles ===
 local function getRole(char)
     if not char then return "Innocent" end
-    
-    -- Find the actual Player object for this character
     local p = Players:GetPlayerFromCharacter(char)
     if not p then return "Innocent" end
-    
-    -- 1. Check THEIR Backpack
     local backpack = p:FindFirstChild("Backpack")
     if backpack then
-        -- Check Knife first, because Murderers can pick up dropped Guns
         if backpack:FindFirstChild("Knife") then return "Murderer" end
         if backpack:FindFirstChild("Gun") then return "Sheriff" end
     end
-    
-    -- 2. Check THEIR Character (if they are holding it)
     if char:FindFirstChild("Knife") then return "Murderer" end
     if char:FindFirstChild("Gun") then return "Sheriff" end
-    
     return "Innocent"
 end
 
@@ -82,21 +75,14 @@ espConnection = RunService.Heartbeat:Connect(function()
             local char = p.Character
             local role = getRole(char)
             local shouldHighlight, color = false, Color3.fromRGB(0, 255, 0)
-            
-            if role == "Murderer" and State.murdererEsp then 
-                shouldHighlight, color = true, Color3.fromRGB(255, 0, 0)
-            elseif role == "Sheriff" and State.sheriffEsp then 
-                shouldHighlight, color = true, Color3.fromRGB(0, 150, 255) 
-            end
-            
+            if role == "Murderer" and State.murdererEsp then shouldHighlight, color = true, Color3.fromRGB(255, 0, 0)
+            elseif role == "Sheriff" and State.sheriffEsp then shouldHighlight, color = true, Color3.fromRGB(0, 150, 255) end
             if shouldHighlight then
                 if not State.highlights[char] then
                     local h = Instance.new("Highlight"); h.OutlineColor = Color3.fromRGB(255, 255, 255); h.FillTransparency = 0.5; h.Parent = char; State.highlights[char] = h
                 end
                 State.highlights[char].FillColor = color; State.highlights[char].Enabled = true
-            elseif State.highlights[char] then 
-                State.highlights[char].Enabled = false 
-            end
+            elseif State.highlights[char] then State.highlights[char].Enabled = false end
         end
     end
     if State.gunEsp then
@@ -115,6 +101,44 @@ espConnection = RunService.Heartbeat:Connect(function()
     end
 end)
 
+-- === FLING & ANTI-FLING SYSTEM ===
+flingConnection = RunService.Heartbeat:Connect(function()
+    if not getgenv().excluseHubRunning then return end
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+
+    if State.flingEnabled then
+        local hrp = char.HumanoidRootPart
+        -- Spin rapidly and apply velocity to fling anyone touched
+        hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(90), 0)
+        local bv = hrp:FindFirstChild("FlingVelocity")
+        if not bv then
+            bv = Instance.new("BodyVelocity")
+            bv.Name = "FlingVelocity"
+            bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bv.Parent = hrp
+        end
+        bv.Velocity = Vector3.new(State.flingSpeed, 0, State.flingSpeed)
+    else
+        local bv = char.HumanoidRootPart:FindFirstChild("FlingVelocity")
+        if bv then bv:Destroy() end
+    end
+end)
+
+antiFlingConnection = RunService.Heartbeat:Connect(function()
+    if not getgenv().excluseHubRunning or not State.antiFlingEnabled then return end
+    local char = player.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    -- Constantly reset velocity and disable collisions to prevent being flung
+    char.HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+    char.HumanoidRootPart.RotVelocity = Vector3.new(0, 0, 0)
+    for _, part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+        end
+    end
+end)
+
 -- === ROLE SPECIFIC PLAYER FEATURES ===
 task.spawn(function()
     while getgenv().excluseHubRunning do
@@ -124,7 +148,6 @@ task.spawn(function()
                 local myRole = getRole(char)
                 local backpack = player:FindFirstChild("Backpack")
                 
-                -- 1. Auto-Equip Weapon
                 if State.autoEquip and backpack then
                     local equipped = char:FindFirstChildOfClass("Tool")
                     if myRole == "Murderer" and (not equipped or equipped.Name ~= "Knife") then
@@ -136,7 +159,6 @@ task.spawn(function()
                     end
                 end
 
-                -- 2. Murderer Kill Aura (Long Stab)
                 if State.killAura and myRole == "Murderer" then
                     for _, p in ipairs(Players:GetPlayers()) do
                         if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
@@ -148,7 +170,6 @@ task.spawn(function()
                     end
                 end
 
-                -- 3. Auto-Pickup Items (Magnet)
                 if State.autoPickup then
                     for _, v in pairs(Workspace:GetDescendants()) do
                         if (v.Name == "Gun" or v.Name == "Knife") and v:IsA("Model") and v:FindFirstChild("Handle") then
@@ -162,11 +183,11 @@ task.spawn(function()
                 end
             end
         end)
-        task.wait(0.1)
+        task.wait(0.2)
     end
 end)
 
--- === AUTO COIN FARM ===
+-- === AUTO COIN FARM (Slightly throttled for stability) ===
 task.spawn(function()
     while getgenv().excluseHubRunning do
         if State.autoCoinFarm then
@@ -178,14 +199,14 @@ task.spawn(function()
                 for _, v in pairs(Workspace:GetDescendants()) do
                     if v.Name == "CoinContainer" and v:IsA("Model") and v.PrimaryPart then
                         char:MoveTo(v.PrimaryPart.Position)
-                        task.wait(0.1)
+                        task.wait(0.15)
                         if coinRemote then pcall(function() coinRemote:FireServer(v) end) end
                         task.wait(State.coinFarmSpeed)
                     end
                 end
             end)
         end
-        task.wait(0.5)
+        task.wait(1) -- Increased wait to reduce CPU load
     end
 end)
 
@@ -249,6 +270,7 @@ end)
 local mainTab = Window:CreateTab("⚔️ Combat")
 local farmTab = Window:CreateTab("💰 Farm")
 local visualsTab = Window:CreateTab("👁️ Visuals")
+local flingTab = Window:CreateTab("🌀 Fling")
 local playerTab = Window:CreateTab("🏃 Player")
 local settingsTab = Window:CreateTab("⚙️ Settings")
 
@@ -304,6 +326,13 @@ visualsTab:CreateToggle({ Name = "Fullbright", CurrentValue = false, Callback = 
     else l.Ambient = Color3.fromRGB(70,70,70); l.OutdoorAmbient = Color3.fromRGB(128,128,128); l.Brightness = 1 end
 end })
 
+-- Fling Tab
+flingTab:CreateSection("Fling Settings")
+flingTab:CreateToggle({ Name = "Enable Spin Fling (Touch)", CurrentValue = false, Callback = function(v) State.flingEnabled = v end })
+flingTab:CreateSlider({ Name = "Fling Power", Range = {100, 5000}, Increment = 100, CurrentValue = 1000, Callback = function(v) State.flingSpeed = v end })
+flingTab:CreateSection("Protection")
+flingTab:CreateToggle({ Name = "Anti-Fling (Self Protection)", CurrentValue = true, Callback = function(v) State.antiFlingEnabled = v end })
+
 -- Player
 playerTab:CreateSection("Movement")
 playerTab:CreateSlider({ Name = "WalkSpeed", Range = {16, 500}, Increment = 1, CurrentValue = 16, Callback = function(v)
@@ -344,6 +373,8 @@ settingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
     if aimbotConnection then aimbotConnection:Disconnect() end
     if jumpConnection then jumpConnection:Disconnect() end
     if espConnection then espConnection:Disconnect() end
+    if flingConnection then flingConnection:Disconnect() end
+    if antiFlingConnection then antiFlingConnection:Disconnect() end
     for _, h in pairs(State.highlights) do if h and h.Parent then h:Destroy() end end
     State.highlights = {}
     task.wait(0.5)
@@ -355,4 +386,4 @@ settingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
     end
 end })
 
-Rayfield:Notify({ Title = "MM2 Loaded", Content = "True Role Detection active.", Duration = 5 })
+Rayfield:Notify({ Title = "MM2 Loaded", Content = "Fling & Anti-Fling ready.", Duration = 5 })
