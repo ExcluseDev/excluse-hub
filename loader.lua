@@ -1,8 +1,20 @@
 --[[
-    excluse universal loader (Fixed DQR Detection)
+    excluse universal loader (Bulletproof & Galaxy Edition)
 --]]
 
--- 1. FIX FOR XENO COREGUI CRASH
+-- 1. PREVENT UI STACKING (Cleans up old GUIs if you run it twice)
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local pg = player:FindFirstChild("PlayerGui")
+if pg then
+    for _, gui in pairs(pg:GetChildren()) do
+        if gui.Name == "Rayfield" or gui.Name == "RayfieldToggleScreen" or gui.Name == "EXC_LoadingScreen" then
+            gui:Destroy()
+        end
+    end
+end
+
+-- 2. FIX FOR XENO COREGUI CRASH
 pcall(function()
     if game:GetService("CoreGui"):FindFirstChild("RobloxGui") then
         local resetBindable = game:GetService("CoreGui").RobloxGui:FindFirstChild("ResetButton")
@@ -13,16 +25,13 @@ end)
 -- ===================================================================
 -- === PART 1: MINIMAL INTRO ===
 -- ===================================================================
-local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
-local SoundService = game:GetService("SoundService")
-local player = Players.LocalPlayer
 
 local loadingGui = Instance.new("ScreenGui")
 loadingGui.Name = "EXC_LoadingScreen"
 loadingGui.IgnoreGuiInset = true
 loadingGui.DisplayOrder = 9999
-loadingGui.Parent = player:WaitForChild("PlayerGui")
+loadingGui.Parent = pg
 
 local bgFrame = Instance.new("Frame")
 bgFrame.Size = UDim2.new(1, 0, 1, 0)
@@ -90,11 +99,10 @@ local Window = Rayfield:CreateWindow({
 })
 
 -- ===================================================================
--- === PART 3: ULTRA UI POST-PROCESSING ===
+-- === PART 3: ULTRA UI POST-PROCESSING (GALAXY OVERRIDE) ===
 -- ===================================================================
 task.spawn(function()
     task.wait(1)
-    local pg = player:FindFirstChild("PlayerGui")
     local rayfieldGui = pg and pg:FindFirstChild("Rayfield")
     
     if rayfieldGui then
@@ -156,45 +164,16 @@ task.spawn(function()
                     end
                 end
             end
-            
-            local particlesFolder = Instance.new("Folder")
-            particlesFolder.Name = "Particles"
-            particlesFolder.Parent = mainFrame
-
-            task.spawn(function()
-                while mainFrame.Parent do
-                    local p = Instance.new("Frame")
-                    p.Size = UDim2.new(0, math.random(2,4), 0, math.random(2,4))
-                    p.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-                    p.BorderSizePixel = 0
-                    p.Position = UDim2.new(math.random(), 0, 1, 0)
-                    p.ZIndex = 10
-                    
-                    local pCorner = Instance.new("UICorner")
-                    pCorner.CornerRadius = UDim.new(1, 0)
-                    pCorner.Parent = p
-                    
-                    p.Parent = particlesFolder
-                    
-                    local speed = math.random(2, 6)
-                    TweenService:Create(p, TweenInfo.new(speed, Enum.EasingStyle.Linear), {
-                        Position = UDim2.new(p.Position.X.Scale, 0, -0.1, 0),
-                        BackgroundTransparency = 1
-                    }):Play()
-                    
-                    task.delay(speed, function() p:Destroy() end)
-                    task.wait(0.1)
-                end
-            end)
         end
     end
 end)
 
 -- ===================================================================
--- === PART 4: DATABASE & EXECUTION ===
+-- === PART 4: DATABASE (ALL 10 GAMES) ===
 -- ===================================================================
 local PlaceId = game.PlaceId
 local UniverseId = game.GameId
+local TeleportService = game:GetService("TeleportService")
 
 local Scripts = {
     ["15899178400"] = { Name = "Call of Mini: Zombies 2", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/comz2.lua" },
@@ -202,11 +181,11 @@ local Scripts = {
     ["6447798030"] = { Name = "Funky Friday", URL = "https://raw.githubusercontent.com/InfernusScripts/Null-Fire/main/Loader" },
     ["142823291"] = { Name = "Murder Mystery 2", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/mm2.lua" },
     ["4588604953"] = { Name = "Criminality", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/criminality.lua" },
-    ["1537690962"] = { Name = "Bee Swarm Simulator", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/bss.lua" }
-    ["112731528776884"] = { Name = "KNIFE DUELS", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/knifeduels.lua" }
-    ["114234929420007"] = { Name = "BloxStrike", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/bloxstrike.lua" }
-    ["122446657157717"] = { Name = "Sniper Arena", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/sniperarena.lua" }
-    ["17516596118"] = { Name = "Hypershot", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/hypershot.lua" }
+    ["1537690962"] = { Name = "Bee Swarm Simulator", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/bss.lua" },
+    ["112731528776884"] = { Name = "Knife Duels", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/knifeduels.lua" },
+    ["114234929420007"] = { Name = "BloxStrike", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/bloxstrike.lua" },
+    ["122446657157717"] = { Name = "Sniper Arena", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/sniperarena.lua" },
+    ["17516596118"] = { Name = "Hypershot", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/hypershot.lua" },
     ["90568084448279"] = { Name = "One Tap", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/onetap.lua" }
 }
 local UNIVERSAL_URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/universal.lua"
@@ -214,7 +193,7 @@ local UNIVERSAL_URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/
 local success, GameName = pcall(function() return game:GetService("MarketplaceService"):GetProductInfo(PlaceId).Name end)
 if not success then GameName = "Unknown Game" end
 
--- SMART DETECTION (FIXED IDS)
+-- Smart Detection for DQR Sub-places
 local isDQRDungeon = (PlaceId == 77649408247578) or (UniverseId == 9931749389) or (string.find(string.lower(GameName), "dungeon quest")) or (string.find(string.lower(GameName), "level"))
 
 local targetScriptUrl = nil
@@ -231,24 +210,25 @@ elseif isDQRDungeon then
 end
 
 -- ===================================================================
--- === PART 5: TABS & UI ===
+-- === PART 5: TABS & EXECUTION ===
 -- ===================================================================
 local mainTab = Window:CreateTab("🏠 Home")
 local gamesTab = Window:CreateTab("🎮 Supported Games")
 
+-- HOME TAB
 mainTab:CreateSection("Detection")
 mainTab:CreateLabel("Game: " .. GameName)
 mainTab:CreateSection("Launch")
 
 local function executeScript(url, name)
     pcall(function() Window:Destroy() end)
-    local pg = player:FindFirstChild("PlayerGui")
-    if pg then
-        if pg:FindFirstChild("Rayfield") then pg.Rayfield:Destroy() end
-        if pg:FindFirstChild("RayfieldToggleScreen") then pg.RayfieldToggleScreen:Destroy() end
+    local pGui = player:FindFirstChild("PlayerGui")
+    if pGui then
+        if pGui:FindFirstChild("Rayfield") then pGui.Rayfield:Destroy() end
+        if pGui:FindFirstChild("RayfieldToggleScreen") then pGui.RayfieldToggleScreen:Destroy() end
     end
     
-    task.wait(1)
+    task.wait(1) -- Prevent Rayfield overlap
     
     local ok, err = pcall(function() loadstring(game:HttpGet(url))() end)
     if not ok then 
@@ -270,6 +250,7 @@ else
     })
 end
 
+-- GAMES TAB
 gamesTab:CreateSection("All Supported Games")
 for id, gameData in pairs(Scripts) do
     gamesTab:CreateButton({
