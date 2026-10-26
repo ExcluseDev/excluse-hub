@@ -1,5 +1,5 @@
 --[[ excluse hub | Dungeon Quest Reborn ]]--
-getgenv().SecureMode = true
+getgenv().SecureMode = false
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local UserInputService = game:GetService("UserInputService")
 local VirtualUser = game:GetService("VirtualUser")
