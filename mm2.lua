@@ -1,5 +1,5 @@
 --[[
-    excluse hub | Murder Mystery 2 (SkidFling & Final Fixes)
+    excluse hub | Murder Mystery 2 (Random TP Update)
 --]]
 getgenv().SecureMode = false
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -125,13 +125,11 @@ flingConnection = RunService.Heartbeat:Connect(function()
             local targetChar = p.Character
             local dist = (targetChar.HumanoidRootPart.Position - hrp.Position).Magnitude
             if dist <= State.flingRadius then
-                -- SkidFling logic: spin our character and set insane velocity
                 hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(90), 0)
                 hrp.Velocity = Vector3.new(9e7, 9e7 * 10, 9e7)
                 hrp.RotVelocity = Vector3.new(9e8, 9e8, 9e8)
-                -- Move towards target
                 hrp.CFrame = CFrame.new(targetChar.HumanoidRootPart.Position)
-                break -- Only fling one person at a time to avoid physics chaos
+                break
             end
         end
     end
@@ -310,16 +308,34 @@ mainTab:CreateButton({
 })
 
 mainTab:CreateButton({
+    Name = "🎲 Teleport to Random Player",
+    Callback = function()
+        local validPlayers = {}
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChildOfClass("Humanoid") and p.Character.Humanoid.Health > 0 then
+                table.insert(validPlayers, p)
+            end
+        end
+        
+        if #validPlayers > 0 then
+            local target = validPlayers[math.random(1, #validPlayers)]
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                player.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+                Rayfield:Notify({ Title = "Teleport", Content = "Teleported to " .. target.Name, Duration = 2 })
+            end
+        else
+            Rayfield:Notify({ Title = "Teleport", Content = "No valid players found.", Duration = 2 })
+        end
+    end,
+})
+
+mainTab:CreateButton({
     Name = "🔫 Teleport to Dropped Gun",
     Callback = function()
         local gun = getDroppedGun()
         if gun and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             local pos
-            if gun:IsA("Model") then
-                pos = gun:GetPivot().Position
-            else
-                pos = gun.Position
-            end
+            if gun:IsA("Model") then pos = gun:GetPivot().Position else pos = gun.Position end
             player.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0, 2, 0))
             Rayfield:Notify({ Title = "Teleport", Content = "Teleported to Gun!", Duration = 2 })
         else
@@ -428,4 +444,4 @@ settingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
     end
 end })
 
-Rayfield:Notify({ Title = "MM2 Loaded", Content = "SkidFling & All features ready.", Duration = 5 })
+Rayfield:Notify({ Title = "MM2 Loaded", Content = "Random TP added. Ready to go.", Duration = 5 })
