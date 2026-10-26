@@ -1,5 +1,5 @@
 --[[
-    excluse hub | Murder Mystery 2 (Foolproof Unload Update)
+    excluse hub | Murder Mystery 2 (Instant ESP & Fixed Coin Farm)
 --]]
 getgenv().SecureMode = false
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 getgenv().excluseHubRunning = true
 
@@ -37,17 +38,20 @@ local Window = Rayfield:CreateWindow({
 local State = {
     fly = false, flySpeed = 50, infJump = false,
     aimbot = false, silentAim = false, autoShoot = false,
-    esp = false, coinEsp = false, highlights = {},
+    murdererEsp = false, sheriffEsp = false, gunEsp = false, coinEsp = false,
+    highlights = {},
     autoCoinFarm = false, coinFarmSpeed = 0.2
 }
 
--- Variables to store connections so we can kill them on unload
+-- Connections for safe unload
 local aimbotConnection
 local jumpConnection
+local espConnection
 
 -- === HELPER: Get Roles ===
 local function getRole(char)
     if not char then return "Innocent" end
+    -- Check for gun/knife even if they are dead (helps with dropped items)
     local backpack = player:FindFirstChild("Backpack")
     if backpack then
         if backpack:FindFirstChild("Knife") then return "Murderer" end
@@ -58,70 +62,102 @@ local function getRole(char)
     return "Innocent"
 end
 
--- === ESP SYSTEM ===
-local function createESP()
+-- === INSTANT ESP SYSTEM (Updates every frame) ===
+espConnection = RunService.Heartbeat:Connect(function()
+    if not getgenv().excluseHubRunning then return end
+
+    -- Cleanup dead highlights
+    for char, h in pairs(State.highlights) do
+        if not char.Parent or (char:IsA("Model") and not char:FindFirstChildOfClass("Humanoid")) then
+            h:Destroy()
+            State.highlights[char] = nil
+        end
+    end
+
+    -- 1. Player Role ESP
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
-            if not State.highlights[p.Name] or not State.highlights[p.Name].Parent then
-                local role = getRole(p.Character)
-                local color = Color3.fromRGB(0, 255, 0)
-                if role == "Murderer" then color = Color3.fromRGB(255, 0, 0)
-                elseif role == "Sheriff" then color = Color3.fromRGB(0, 150, 255) end
+            local char = p.Character
+            local role = getRole(char)
+            local shouldHighlight = false
+            local color = Color3.fromRGB(0, 255, 0)
 
-                local h = Instance.new("Highlight")
-                h.FillColor = color
-                h.OutlineColor = Color3.fromRGB(255, 255, 255)
-                h.FillTransparency = 0.5
-                h.Parent = p.Character
-                State.highlights[p.Name] = h
+            if role == "Murderer" and State.murdererEsp then
+                shouldHighlight = true
+                color = Color3.fromRGB(255, 0, 0)
+            elseif role == "Sheriff" and State.sheriffEsp then
+                shouldHighlight = true
+                color = Color3.fromRGB(0, 150, 255)
+            end
+
+            if shouldHighlight then
+                if not State.highlights[char] then
+                    local h = Instance.new("Highlight")
+                    h.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    h.FillTransparency = 0.5
+                    h.Parent = char
+                    State.highlights[char] = h
+                end
+                State.highlights[char].FillColor = color
+                State.highlights[char].Enabled = true
+            else
+                if State.highlights[char] then
+                    State.highlights[char].Enabled = false
+                end
             end
         end
     end
-    -- Gun ESP
-    for _, obj in ipairs(Workspace:GetDescendants()) do
-        if obj.Name == "Gun" and obj:IsA("BasePart") and not State.highlights[obj] then
-            local h = Instance.new("Highlight")
-            h.FillColor = Color3.fromRGB(255, 255, 0)
-            h.Parent = obj
-            State.highlights[obj] = h
+
+    -- 2. Dropped Gun ESP
+    if State.gunEsp then
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj.Name == "Gun" and (obj:IsA("BasePart") or obj:IsA("Model")) and not State.highlights[obj] then
+                local h = Instance.new("Highlight")
+                h.FillColor = Color3.fromRGB(255, 255, 0) -- Yellow
+                h.OutlineColor = Color3.fromRGB(0, 0, 0)
+                h.Parent = obj
+                State.highlights[obj] = h
+            end
         end
     end
-end
 
--- === COIN ESP ===
-local function createCoinESP()
-    for _, v in pairs(Workspace:GetDescendants()) do
-        if v.Name == "CoinContainer" and v:IsA("Model") and not State.highlights[v] then
-            local h = Instance.new("Highlight")
-            h.FillColor = Color3.fromRGB(255, 215, 0)
-            h.OutlineColor = Color3.fromRGB(255, 255, 255)
-            h.Parent = v
-            State.highlights[v] = h
+    -- 3. Coin ESP
+    if State.coinEsp then
+        for _, v in pairs(Workspace:GetDescendants()) do
+            if v.Name == "CoinContainer" and v:IsA("Model") and not State.highlights[v] then
+                local h = Instance.new("Highlight")
+                h.FillColor = Color3.fromRGB(255, 215, 0) -- Gold
+                h.OutlineColor = Color3.fromRGB(255, 255, 255)
+                h.Parent = v
+                State.highlights[v] = h
+            end
         end
-    end
-end
-
-task.spawn(function()
-    while getgenv().excluseHubRunning do
-        if State.esp then pcall(createESP) end
-        if State.coinEsp then pcall(createCoinESP) end
-        task.wait(1)
     end
 end)
 
--- === AUTO COIN FARM ===
+-- === AUTO COIN FARM (Optimized) ===
 task.spawn(function()
     while getgenv().excluseHubRunning do
         if State.autoCoinFarm then
             pcall(function()
                 local char = player.Character
-                if char and char:FindFirstChild("HumanoidRootPart") then
-                    for _, v in pairs(Workspace:GetDescendants()) do
-                        if v.Name == "CoinContainer" and v:IsA("Model") then
-                            local coinPos = v:GetModelCFrame().Position
-                            char:MoveTo(coinPos)
-                            task.wait(State.coinFarmSpeed)
+                if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+
+                -- Find the remote to collect coins
+                local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+                local coinRemote = remotes and (remotes:FindFirstChild("GetCoin") or remotes:FindFirstChild("Coin") or remotes:FindFirstChild("CollectCoin"))
+
+                for _, v in pairs(Workspace:GetDescendants()) do
+                    if v.Name == "CoinContainer" and v:IsA("Model") and v.PrimaryPart then
+                        -- Move to the coin
+                        char:MoveTo(v.PrimaryPart.Position)
+                        task.wait(0.1) -- Give the game a split second to register the touch
+
+                        -- Fire the remote if we found it
+                        if coinRemote then
+                            pcall(function() coinRemote:FireServer(v) end)
                         end
+                        task.wait(State.coinFarmSpeed)
                     end
                 end
             end)
@@ -140,7 +176,6 @@ local function getMurderer()
     return nil
 end
 
--- Stored in a variable so we can disconnect it on unload
 aimbotConnection = RunService.RenderStepped:Connect(function()
     if not getgenv().excluseHubRunning then return end
     if State.aimbot or State.silentAim then
@@ -224,23 +259,39 @@ farmTab:CreateToggle({
     Callback = function(v)
         State.coinEsp = v
         if not v then
-            for _, h in pairs(State.highlights) do
-                if h and h.Parent and h.Parent.Name == "CoinContainer" then h:Destroy() end
+            for obj, h in pairs(State.highlights) do
+                if obj.Name == "CoinContainer" then h:Destroy(); State.highlights[obj] = nil end
             end
         end
     end,
 })
 
 -- Visuals
-visualsTab:CreateSection("ESP")
-visualsTab:CreateToggle({ Name = "Player & Gun ESP", CurrentValue = false, Callback = function(v)
-    State.esp = v
-    if not v then
-        for _, h in pairs(State.highlights) do
-            if h and h.Parent and h.Parent:IsA("Model") and h.Parent.Name ~= "CoinContainer" then h:Destroy() end
+visualsTab:CreateSection("Instant Role ESP")
+visualsTab:CreateToggle({
+    Name = "Murderer ESP (Red)",
+    CurrentValue = false,
+    Callback = function(v) State.murdererEsp = v end,
+})
+visualsTab:CreateToggle({
+    Name = "Sheriff ESP (Blue)",
+    CurrentValue = false,
+    Callback = function(v) State.sheriffEsp = v end,
+})
+visualsTab:CreateSection("Item ESP")
+visualsTab:CreateToggle({
+    Name = "Dropped Gun ESP (Yellow)",
+    CurrentValue = false,
+    Callback = function(v) 
+        State.gunEsp = v 
+        if not v then
+            for obj, h in pairs(State.highlights) do
+                if obj.Name == "Gun" then h:Destroy(); State.highlights[obj] = nil end
+            end
         end
-    end
-end })
+    end,
+})
+visualsTab:CreateSection("Environment")
 visualsTab:CreateToggle({ Name = "Fullbright", CurrentValue = false, Callback = function(v)
     local l = game:GetService("Lighting")
     if v then l.Ambient = Color3.fromRGB(200,200,200); l.OutdoorAmbient = Color3.fromRGB(200,200,200); l.Brightness = 2
@@ -280,39 +331,24 @@ end })
 playerTab:CreateSlider({ Name = "Fly Speed", Range = {10, 200}, Increment = 5, CurrentValue = 50, Callback = function(v) State.flySpeed = v end })
 playerTab:CreateToggle({ Name = "Infinite Jump", CurrentValue = false, Callback = function(v) State.infJump = v end })
 
--- Settings (THE FOOLPROOF UNLOAD)
+-- Settings (FOOLPROOF UNLOAD)
 settingsTab:CreateButton({ Name = "🛑 Unload Script", Callback = function()
-    -- 1. Kill the global flag so loops stop
     getgenv().excluseHubRunning = false
-    
-    -- 2. Turn off all state variables
-    for k, v in pairs(State) do
-        if type(v) == "boolean" then State[k] = false end
-    end
-
-    -- 3. Disconnect the active RenderStepped and Input connections
+    for k, v in pairs(State) do if type(v) == "boolean" then State[k] = false end end
     if aimbotConnection then aimbotConnection:Disconnect() end
     if jumpConnection then jumpConnection:Disconnect() end
-
-    -- 4. Clean up all ESP instances
-    for _, h in pairs(State.highlights) do 
-        if h and h.Parent then h:Destroy() end 
-    end
-    State.highlights = {}
-
-    -- 5. Wait for the game engine to catch up and stop all loops
-    task.wait(0.5)
-
-    -- 6. Destroy the Window and force-clean the PlayerGui
-    pcall(function() Window:Destroy() end)
+    if espConnection then espConnection:Disconnect() end
     
+    for _, h in pairs(State.highlights) do if h and h.Parent then h:Destroy() end end
+    State.highlights = {}
+    
+    task.wait(0.5)
+    pcall(function() Window:Destroy() end)
     local pg = player:FindFirstChild("PlayerGui")
     if pg then
-        local rGui = pg:FindFirstChild("Rayfield")
-        if rGui then rGui:Destroy() end
-        local rToggle = pg:FindFirstChild("RayfieldToggleScreen")
-        if rToggle then rToggle:Destroy() end
+        local rGui = pg:FindFirstChild("Rayfield"); if rGui then rGui:Destroy() end
+        local rToggle = pg:FindFirstChild("RayfieldToggleScreen"); if rToggle then rToggle:Destroy() end
     end
 end })
 
-Rayfield:Notify({ Title = "MM2 Loaded", Content = "Auto Coin Farm & Combat ready.", Duration = 5 })
+Rayfield:Notify({ Title = "MM2 Loaded", Content = "Instant ESP & Coin Farm ready.", Duration = 5 })
