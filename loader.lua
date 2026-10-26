@@ -1,20 +1,8 @@
 --[[
-    excluse universal loader (Bulletproof & Galaxy Edition)
+    excluse universal loader (Ultra-Lightweight Fix)
 --]]
 
--- 1. PREVENT UI STACKING (Cleans up old GUIs if you run it twice)
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local pg = player:FindFirstChild("PlayerGui")
-if pg then
-    for _, gui in pairs(pg:GetChildren()) do
-        if gui.Name == "Rayfield" or gui.Name == "RayfieldToggleScreen" or gui.Name == "EXC_LoadingScreen" then
-            gui:Destroy()
-        end
-    end
-end
-
--- 2. FIX FOR XENO COREGUI CRASH
+-- 1. FIX FOR XENO COREGUI CRASH
 pcall(function()
     if game:GetService("CoreGui"):FindFirstChild("RobloxGui") then
         local resetBindable = game:GetService("CoreGui").RobloxGui:FindFirstChild("ResetButton")
@@ -22,159 +10,11 @@ pcall(function()
     end
 end)
 
--- ===================================================================
--- === PART 1: MINIMAL INTRO ===
--- ===================================================================
-local TweenService = game:GetService("TweenService")
-
-local loadingGui = Instance.new("ScreenGui")
-loadingGui.Name = "EXC_LoadingScreen"
-loadingGui.IgnoreGuiInset = true
-loadingGui.DisplayOrder = 9999
-loadingGui.Parent = pg
-
-local bgFrame = Instance.new("Frame")
-bgFrame.Size = UDim2.new(1, 0, 1, 0)
-bgFrame.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
-bgFrame.BorderSizePixel = 0
-bgFrame.Parent = loadingGui
-
-local textLabel = Instance.new("TextLabel")
-textLabel.Size = UDim2.new(0, 200, 0, 100)
-textLabel.Position = UDim2.new(0.5, -100, 0.5, -50)
-textLabel.BackgroundTransparency = 1
-textLabel.Text = "EXC"
-textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-textLabel.TextScaled = true
-textLabel.Font = Enum.Font.GothamBlack
-textLabel.TextTransparency = 1
-textLabel.Parent = bgFrame
-
-local uiStroke = Instance.new("UIStroke")
-uiStroke.Thickness = 2
-uiStroke.Color = Color3.fromRGB(150, 200, 255)
-uiStroke.Transparency = 1
-uiStroke.Parent = textLabel
-
-TweenService:Create(textLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {TextTransparency = 0}):Play()
-TweenService:Create(uiStroke, TweenInfo.new(0.3, Enum.EasingStyle.Quad), {Transparency = 0}):Play()
-task.wait(0.7)
-
-local fadeInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad)
-TweenService:Create(bgFrame, fadeInfo, {BackgroundTransparency = 1}):Play()
-TweenService:Create(textLabel, fadeInfo, {TextTransparency = 1}):Play()
-TweenService:Create(uiStroke, fadeInfo, {Transparency = 1}):Play()
-task.wait(0.3)
-loadingGui:Destroy()
-
--- ===================================================================
--- === PART 2: RAYFIELD SETUP ===
--- ===================================================================
-getgenv().SecureMode = false
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
-local CyberNeonTheme = {
-    TextColor = Color3.fromRGB(255, 255, 255), Background = Color3.fromRGB(8, 5, 15),
-    Topbar = Color3.fromRGB(12, 8, 20), Shadow = Color3.fromRGB(0, 0, 0),
-    NotificationBackground = Color3.fromRGB(15, 10, 25), NotificationActionsBackground = Color3.fromRGB(20, 15, 35),
-    TabBackground = Color3.fromRGB(15, 10, 25), TabStroke = Color3.fromRGB(255, 0, 150),
-    TabBackgroundSelected = Color3.fromRGB(255, 0, 150), TabTextColor = Color3.fromRGB(150, 150, 150),
-    SelectedTabTextColor = Color3.fromRGB(255, 255, 255), ElementBackground = Color3.fromRGB(15, 10, 25),
-    ElementBackgroundHover = Color3.fromRGB(25, 15, 40), SecondaryElementBackground = Color3.fromRGB(10, 5, 20),
-    ElementStroke = Color3.fromRGB(0, 255, 255), SecondaryElementStroke = Color3.fromRGB(50, 50, 100),
-    SliderBackground = Color3.fromRGB(255, 0, 150), SliderProgress = Color3.fromRGB(0, 255, 255),
-    SliderStroke = Color3.fromRGB(255, 255, 255), ToggleBackground = Color3.fromRGB(20, 15, 35),
-    ToggleEnabled = Color3.fromRGB(0, 255, 255), ToggleDisabled = Color3.fromRGB(50, 50, 60),
-    ToggleEnabledStroke = Color3.fromRGB(255, 255, 255), ToggleDisabledStroke = Color3.fromRGB(80, 80, 90),
-    ToggleEnabledOuterStroke = Color3.fromRGB(0, 255, 255), ToggleDisabledOuterStroke = Color3.fromRGB(50, 50, 60),
-    DropdownSelected = Color3.fromRGB(255, 0, 150), DropdownUnselected = Color3.fromRGB(15, 10, 25),
-    InputBackground = Color3.fromRGB(10, 5, 20), InputStroke = Color3.fromRGB(0, 255, 255),
-    PlaceholderColor = Color3.fromRGB(100, 100, 120)
-}
-
-local Window = Rayfield:CreateWindow({
-    Name = "excluse hub", LoadingTitle = "Loading...",
-    LoadingSubtitle = "v1.621", Theme = CyberNeonTheme, DisableRayfieldPrompts = true, 
-    DisableBuildWarnings = true, ConfigurationSaving = { Enabled = false }, KeySystem = false
-})
-
--- ===================================================================
--- === PART 3: ULTRA UI POST-PROCESSING (GALAXY OVERRIDE) ===
--- ===================================================================
-task.spawn(function()
-    task.wait(1)
-    local rayfieldGui = pg and pg:FindFirstChild("Rayfield")
-    
-    if rayfieldGui then
-        local mainFrame = rayfieldGui:FindFirstChild("MainFrame")
-        
-        if mainFrame then
-            local corner = Instance.new("UICorner")
-            corner.CornerRadius = UDim.new(0, 8)
-            corner.Parent = mainFrame
-            
-            local border = Instance.new("UIStroke")
-            border.Color = Color3.fromRGB(0, 255, 255)
-            border.Thickness = 2
-            border.Transparency = 0.2
-            border.Parent = mainFrame
-
-            task.spawn(function()
-                local hue = 0
-                while border.Parent do
-                    hue = (hue + 0.005) % 1
-                    border.Color = Color3.fromHSV(hue, 1, 1)
-                    task.wait(0.05)
-                end
-            end)
-
-            local bg = mainFrame:FindFirstChild("Background")
-            if bg then
-                local colors = {Color3.fromRGB(255, 0, 150), Color3.fromRGB(0, 255, 255), Color3.fromRGB(100, 0, 255)}
-                for i = 1, 3 do
-                    local nebula = Instance.new("ImageLabel")
-                    nebula.Size = UDim2.new(1.5, 0, 1.5, 0)
-                    nebula.Position = UDim2.new(0, 0, 0, 0)
-                    nebula.BackgroundTransparency = 1
-                    nebula.Image = "rbxassetid://1316045217"
-                    nebula.ImageColor3 = colors[i]
-                    nebula.ImageTransparency = 0.85
-                    nebula.ZIndex = 0
-                    nebula.Parent = bg
-
-                    task.spawn(function()
-                        while nebula.Parent do
-                            local randX = math.random(-100, 100)
-                            local randY = math.random(-100, 100)
-                            TweenService:Create(nebula, TweenInfo.new(10, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-                                Position = UDim2.new(0, randX, 0, randY)
-                            }):Play()
-                            task.wait(10)
-                        end
-                    end)
-                end
-            end
-
-            for _, desc in ipairs(mainFrame:GetDescendants()) do
-                if desc:IsA("Frame") and desc ~= mainFrame and desc ~= bg then
-                    if not desc:FindFirstChildOfClass("UICorner") then
-                        local c = Instance.new("UICorner")
-                        c.CornerRadius = UDim.new(0, 6)
-                        c.Parent = desc
-                    end
-                end
-            end
-        end
-    end
-end)
-
--- ===================================================================
--- === PART 4: DATABASE (ALL 10 GAMES) ===
--- ===================================================================
+local player = game:GetService("Players").LocalPlayer
 local PlaceId = game.PlaceId
-local UniverseId = game.GameId
 local TeleportService = game:GetService("TeleportService")
 
+-- 2. DATABASE
 local Scripts = {
     ["15899178400"] = { Name = "Call of Mini: Zombies 2", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/comz2.lua" },
     ["77649408247578"] = { Name = "Dungeon Quest Reborn", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/dqr.lua" },
@@ -186,82 +26,103 @@ local Scripts = {
     ["114234929420007"] = { Name = "BloxStrike", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/bloxstrike.lua" },
     ["122446657157717"] = { Name = "Sniper Arena", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/sniperarena.lua" },
     ["17516596118"] = { Name = "Hypershot", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/hypershot.lua" },
-    ["90568084448279"] = { Name = "One Tap", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/onetap.lua" }
+    ["90568084448279"] = { Name = "One Tap", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/onetap.lua" },
     ["13772394625"] = { Name = "Blade Ball", URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/bladeball.lua" }
 }
 local UNIVERSAL_URL = "https://raw.githubusercontent.com/ExcluseDev/excluse-hub/main/universal.lua"
 
+-- Smart DQR Detection
 local success, GameName = pcall(function() return game:GetService("MarketplaceService"):GetProductInfo(PlaceId).Name end)
 if not success then GameName = "Unknown Game" end
+local isDQR = (PlaceId == 77649408247578) or (game.GameId == 9931749389) or (string.find(string.lower(GameName), "dungeon quest")) or (string.find(string.lower(GameName), "level"))
 
--- Smart Detection for DQR Sub-places
-local isDQRDungeon = (PlaceId == 77649408247578) or (UniverseId == 9931749389) or (string.find(string.lower(GameName), "dungeon quest")) or (string.find(string.lower(GameName), "level"))
-
-local targetScriptUrl = nil
-local targetScriptName = ""
+local targetUrl = nil
+local targetName = ""
 
 if Scripts[tostring(PlaceId)] then
-    targetScriptUrl = Scripts[tostring(PlaceId)].URL
-    targetScriptName = Scripts[tostring(PlaceId)].Name
-elseif isDQRDungeon then
-    if Scripts["77649408247578"] then
-        targetScriptUrl = Scripts["77649408247578"].URL
-        targetScriptName = "Dungeon Quest Reborn (In Dungeon)"
+    targetUrl = Scripts[tostring(PlaceId)].URL
+    targetName = Scripts[tostring(PlaceId)].Name
+elseif isDQR then
+    targetUrl = Scripts["77649408247578"].URL
+    targetName = "Dungeon Quest Reborn"
+end
+
+-- 3. RAW GUI (No Rayfield to prevent double-load crash)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "EXC_Loader"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 300, 0, 200)
+Frame.Position = UDim2.new(0.5, -150, 0.5, -100)
+Frame.BackgroundColor3 = Color3.fromRGB(15, 15, 25)
+Frame.BorderSizePixel = 2
+Frame.BorderColor3 = Color3.fromRGB(150, 50, 255)
+Frame.Parent = ScreenGui
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
+Title.Text = "excluse loader"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 18
+Title.Parent = Frame
+
+local Info = Instance.new("TextLabel")
+Info.Size = UDim2.new(1, -20, 0, 40)
+Info.Position = UDim2.new(0, 10, 0, 50)
+Info.BackgroundTransparency = 1
+Info.Text = "Detected: " .. GameName
+Info.TextColor3 = Color3.fromRGB(200, 200, 200)
+Info.Font = Enum.Font.Gotham
+Info.TextSize = 14
+Info.TextWrapped = true
+Info.Parent = Frame
+
+local Btn = Instance.new("TextButton")
+Btn.Size = UDim2.new(1, -40, 0, 40)
+Btn.Position = UDim2.new(0, 20, 0, 100)
+Btn.BackgroundColor3 = Color3.fromRGB(150, 50, 255)
+Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Btn.Font = Enum.Font.GothamBold
+Btn.TextSize = 16
+Btn.Text = "Launch Script"
+Btn.Parent = Frame
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(1, -40, 0, 30)
+CloseBtn.Position = UDim2.new(0, 20, 0, 155)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.Font = Enum.Font.Gotham
+CloseBtn.TextSize = 14
+CloseBtn.Text = "Cancel"
+CloseBtn.Parent = Frame
+
+-- 4. EXECUTION LOGIC (With huge wait time for Xeno memory flush)
+local function execute(url)
+    Frame:Destroy() -- Delete the loader GUI immediately
+    task.wait(2) -- CRITICAL: Give Xeno 2 full seconds to flush the memory before loading the next UI
+    
+    local ok, err = pcall(function()
+        loadstring(game:HttpGet(url))()
+    end)
+    
+    if not ok then
+        print("[EXC Loader] Error loading script: " .. tostring(err))
     end
 end
 
--- ===================================================================
--- === PART 5: TABS & EXECUTION ===
--- ===================================================================
-local mainTab = Window:CreateTab("🏠 Home")
-local gamesTab = Window:CreateTab("🎮 Supported Games")
-
--- HOME TAB
-mainTab:CreateSection("Detection")
-mainTab:CreateLabel("Game: " .. GameName)
-mainTab:CreateSection("Launch")
-
-local function executeScript(url, name)
-    pcall(function() Window:Destroy() end)
-    local pGui = player:FindFirstChild("PlayerGui")
-    if pGui then
-        if pGui:FindFirstChild("Rayfield") then pGui.Rayfield:Destroy() end
-        if pGui:FindFirstChild("RayfieldToggleScreen") then pGui.RayfieldToggleScreen:Destroy() end
-    end
-    
-    task.wait(1) -- Prevent Rayfield overlap
-    
-    local ok, err = pcall(function() loadstring(game:HttpGet(url))() end)
-    if not ok then 
-        warn("Failed to load: " .. tostring(err))
-    end
-end
-
-if targetScriptUrl then
-    mainTab:CreateLabel("✅ Script found for " .. targetScriptName)
-    mainTab:CreateButton({
-        Name = "🚀 Launch " .. targetScriptName,
-        Callback = function() executeScript(targetScriptUrl, targetScriptName) end,
-    })
+if targetUrl then
+    Btn.Text = "Launch " .. targetName
+    Btn.MouseButton1Click:Connect(function() execute(targetUrl) end)
 else
-    mainTab:CreateLabel("❌ No specific script found for this game.")
-    mainTab:CreateButton({
-        Name = "🌐 Launch Universal Hub",
-        Callback = function() executeScript(UNIVERSAL_URL, "Universal Hub") end,
-    })
+    Btn.Text = "Launch Universal Hub"
+    Btn.MouseButton1Click:Connect(function() execute(UNIVERSAL_URL) end)
 end
 
--- GAMES TAB
-gamesTab:CreateSection("All Supported Games")
-for id, gameData in pairs(Scripts) do
-    gamesTab:CreateButton({
-        Name = "🌐 Join " .. gameData.Name,
-        Callback = function()
-            Rayfield:Notify({ Title = "Teleporting", Content = "Joining " .. gameData.Name .. "...", Duration = 3 })
-            task.wait(0.5)
-            pcall(function() TeleportService:Teleport(tonumber(id), player) end)
-        end,
-    })
-end
-
-Rayfield:Notify({ Title = "SYSTEM ONLINE", Content = "Detected: " .. GameName, Duration = 5 })
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
